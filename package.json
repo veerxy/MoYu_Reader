@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "client": "vite build && electron electron/main.cjs",
     "electron:dev": "concurrently \"vite --port=3000\" \"electron electron/main.cjs\"",
     "electron:build": "vite build && electron-builder",
     "electron:build:win": "vite build && electron-builder --win",

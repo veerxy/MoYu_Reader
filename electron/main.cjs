@@ -24,16 +24,21 @@ function createWindow() {
     },
   });
 
-  // 加载页面
-  if (isDev && process.env.ELECTRON_START_URL) {
+  // 加载页面：若显式传入本地开发服务 URL 则连接，否则直接以纯客户端模式加载本地静态文件
+  if (process.env.ELECTRON_START_URL) {
     mainWindow.loadURL(process.env.ELECTRON_START_URL);
-  } else if (isDev) {
+  } else if (process.env.ELECTRON_DEV === 'true') {
     mainWindow.loadURL('http://localhost:3000').catch(() => {
-      // 若 localhost:3000 尚未就绪，加载 dist/index.html
       mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
     });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // 纯客户端模式：直接加载本地文件，无需任何 HTTP 或后台服务
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    if (fs.existsSync(indexPath)) {
+      mainWindow.loadFile(indexPath);
+    } else {
+      mainWindow.loadURL('http://localhost:3000');
+    }
   }
 
   // 监听窗口最大化与还原事件，向渲染进程同步状态
