@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DocumentItem, ReaderSettings } from './types';
 import {
   getAllDocuments,
@@ -14,14 +14,6 @@ import { RecentFileList } from './components/RecentFileList';
 import { ReaderView } from './components/ReaderView';
 import { MinimizedWidget } from './components/MinimizedWidget';
 import { SettingsModal } from './components/SettingsModal';
-import { ResizeHandles, ResizeDirection } from './components/ResizeHandles';
-
-interface WindowBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 
 export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -31,33 +23,19 @@ export default function App() {
   const [settings, setSettings] = useState<ReaderSettings>(() => loadSettings());
   const [isGlobalSettingsOpen, setIsGlobalSettingsOpen] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-
-  // Floating Window Coordinates & Size
   const [isMaximized, setIsMaximized] = useState<boolean>(false);
-  const [isReaderBorderVisible, setIsReaderBorderVisible] = useState<boolean>(false);
-  const [windowBounds, setWindowBounds] = useState<WindowBounds>(() => {
-    const defaultW = Math.min(1040, window.innerWidth - 48);
-    const defaultH = Math.min(680, window.innerHeight - 48);
-    const defaultX = Math.max(24, (window.innerWidth - defaultW) / 2);
-    const defaultY = Math.max(24, (window.innerHeight - defaultH) / 2);
-    return { x: defaultX, y: defaultY, width: defaultW, height: defaultH };
-  });
 
-  // Dragging / Resizing Refs
-  const isDraggingRef = useRef(false);
-  const isResizingRef = useRef(false);
-  const dragStartRef = useRef<{ mouseX: number; mouseY: number; initialX: number; initialY: number }>({
-    mouseX: 0,
-    mouseY: 0,
-    initialX: 0,
-    initialY: 0,
-  });
-  const resizeStartRef = useRef<{
-    direction: ResizeDirection;
-    mouseX: number;
-    mouseY: number;
-    initialBounds: WindowBounds;
-  } | null>(null);
+  // Sync maximization state with Electron if available
+  useEffect(() => {
+    if (window.electronAPI?.onMaximizedChange) {
+      const cleanup = window.electronAPI.onMaximizedChange((max: boolean) => {
+        setIsMaximized(max);
+      });
+      return () => {
+        if (typeof cleanup === 'function') cleanup();
+      };
+    }
+  }, []);
 
   // Initialize documents from IndexedDB or seed
   useEffect(() => {
@@ -84,105 +62,13 @@ export default function App() {
     initDocs();
   }, []);
 
-  // Window drag & resize mouse event listeners
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDraggingRef.current) {
-        const dx = e.clientX - dragStartRef.current.mouseX;
-        const dy = e.clientY - dragStartRef.current.mouseY;
-        const newX = Math.max(-100, Math.min(window.innerWidth - 100, dragStartRef.current.initialX + dx));
-        const newY = Math.max(0, Math.min(window.innerHeight - 60, dragStartRef.current.initialY + dy));
-        setWindowBounds((prev) => ({ ...prev, x: newX, y: newY }));
-      } else if (isResizingRef.current && resizeStartRef.current) {
-        const { direction, mouseX, mouseY, initialBounds } = resizeStartRef.current;
-        const dx = e.clientX - mouseX;
-        const dy = e.clientY - mouseY;
-
-        let newX = initialBounds.x;
-        let newY = initialBounds.y;
-        let newW = initialBounds.width;
-        let newH = initialBounds.height;
-
-        const MIN_W = 480;
-        const MIN_H = 340;
-
-        // East / West
-        if (direction.includes('e')) {
-          newW = Math.max(MIN_W, initialBounds.width + dx);
-        } else if (direction.includes('w')) {
-          const calculatedW = initialBounds.width - dx;
-          if (calculatedW >= MIN_W) {
-            newW = calculatedW;
-            newX = initialBounds.x + dx;
-          }
-        }
-
-        // South / North
-        if (direction.includes('s')) {
-          newH = Math.max(MIN_H, initialBounds.height + dy);
-        } else if (direction.includes('n')) {
-          const calculatedH = initialBounds.height - dy;
-          if (calculatedH >= MIN_H) {
-            newH = calculatedH;
-            newY = initialBounds.y + dy;
-          }
-        }
-
-        setWindowBounds({
-          x: newX,
-          y: newY,
-          width: newW,
-          height: newH,
-        });
-      }
-    };
-
-    const handleMouseUp = () => {
-      isDraggingRef.current = false;
-      isResizingRef.current = false;
-      resizeStartRef.current = null;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, []);
-
-  const handleStartDrag = (e: React.MouseEvent) => {
-    if (isMaximized) return;
-    if (e.button !== 0) return; // only left click
-    isDraggingRef.current = true;
-    dragStartRef.current = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      initialX: windowBounds.x,
-      initialY: windowBounds.y,
-    };
-  };
-
-  const handleResizeStart = (direction: ResizeDirection, e: React.MouseEvent) => {
-    if (isMaximized) return;
-    e.preventDefault();
-    e.stopPropagation();
-    isResizingRef.current = true;
-    resizeStartRef.current = {
-      direction,
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      initialBounds: { ...windowBounds },
-    };
-  };
-
   // Update settings and persist
   const handleUpdateSettings = (newSettings: ReaderSettings) => {
     setSettings(newSettings);
     saveSettings(newSettings);
   };
 
-  // Open a document to read
+  // Open document in reader
   const handleOpenDocument = async (doc: DocumentItem) => {
     const updatedDoc = {
       ...doc,
@@ -253,96 +139,66 @@ export default function App() {
     setIsReading(true);
   };
 
-  const isTransparentMode = isReading && settings.bgColor === 'transparent';
+  // Compute container background based on mode
+  const getContainerBgClass = () => {
+    if (isReading && !isMinimized) {
+      switch (settings.bgColor) {
+        case 'dark':
+          return 'bg-[#18181b] text-zinc-100';
+        case 'white':
+          return 'bg-white text-zinc-900';
+        case 'book':
+          return 'bg-[#f4ecd8] text-[#2c2214]';
+        case 'transparent':
+        default:
+          return 'bg-transparent text-zinc-900';
+      }
+    }
+    return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
+  };
 
   return (
     <div
       id="desktop-app-container"
-      className="relative w-screen h-screen overflow-hidden bg-zinc-950 flex flex-col font-sans select-none"
+      className={`w-full h-full min-h-screen overflow-hidden flex flex-col font-sans select-none transition-colors duration-200 ${getContainerBgClass()}`}
     >
-      {/* Background subtle mesh */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+      {/* Windows Standard Titlebar (shown in home view) */}
+      {(!isReading || isMinimized) && (
+        <DesktopHeader
+          title="文档阅读器"
+          onMinimize={() => {}}
+          onClose={() => {}}
+          isMaximized={isMaximized}
+          onToggleMaximize={() => setIsMaximized((prev) => !prev)}
+        />
+      )}
 
-      {/* Floating or Maximized Client Window */}
-      <div
-        id="desktop-main-window"
-        style={
-          isMaximized
-            ? {
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
-                zIndex: 20,
-              }
-            : {
-                position: 'absolute',
-                top: `${windowBounds.y}px`,
-                left: `${windowBounds.x}px`,
-                width: `${windowBounds.width}px`,
-                height: `${windowBounds.height}px`,
-                zIndex: 20,
-              }
-        }
-        className={`flex flex-col ${
-          isTransparentMode
-            ? 'bg-transparent shadow-none border-0'
-            : isMaximized
-            ? 'bg-zinc-900 border-0 shadow-none'
-            : 'bg-zinc-900 rounded-xl shadow-2xl border border-zinc-800/80 overflow-hidden ring-1 ring-white/10'
-        }`}
-      >
-        {/* 8-Direction Resize Handles (when floating) */}
-        {!isMaximized && (
-          <ResizeHandles
-            onResizeStart={handleResizeStart}
-            isTransparentMode={isTransparentMode}
-            showCornerGrip={!isReading || isReaderBorderVisible}
-          />
-        )}
-
-        {/* Desktop Titlebar (shown when not reading) */}
-        {!isReading && (
-          <DesktopHeader
-            title="文档阅读器"
-            onMinimize={() => {}}
-            onClose={() => {}}
-            isMaximized={isMaximized}
+      {/* Main Workspace */}
+      <div className="flex-1 w-full h-full flex overflow-hidden relative">
+        {/* Active Document Reader View */}
+        {isReading && activeDoc && !isMinimized && (
+          <ReaderView
+            document={activeDoc}
+            settings={settings}
+            onUpdateSettings={handleUpdateSettings}
+            onClose={handleCloseReading}
+            onMinimize={handleMinimizeReading}
+            onProgressUpdate={handleProgressUpdate}
             onToggleMaximize={() => setIsMaximized((prev) => !prev)}
-            onStartDrag={handleStartDrag}
           />
         )}
 
-        {/* Client Window Inner Content */}
-        <div className="flex-1 w-full h-full flex overflow-hidden relative">
-          {/* Active Document Reader View */}
-          {isReading && activeDoc && !isMinimized && (
-            <ReaderView
-              document={activeDoc}
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
-              onClose={handleCloseReading}
-              onMinimize={handleMinimizeReading}
-              onProgressUpdate={handleProgressUpdate}
-              onStartDrag={handleStartDrag}
-              onToggleMaximize={() => setIsMaximized((prev) => !prev)}
-              onBorderVisibilityChange={setIsReaderBorderVisible}
+        {/* Home View: Clean Single-Pane Dashboard */}
+        {(!isReading || isMinimized) && (
+          <main className="w-full h-full overflow-y-auto bg-[#f8f9fa]">
+            <RecentFileList
+              documents={documents}
+              onOpenDocument={handleOpenDocument}
+              onDeleteDocument={handleDeleteDocument}
+              onDocumentImported={handleDocumentImported}
             />
-          )}
-
-          {/* Home View: Clean Single-Pane Dashboard without sidebar */}
-          {(!isReading || isMinimized) && (
-            <main className="w-full h-full overflow-y-auto bg-zinc-50">
-              <RecentFileList
-                documents={documents}
-                onOpenDocument={handleOpenDocument}
-                onDeleteDocument={handleDeleteDocument}
-                onDocumentImported={handleDocumentImported}
-              />
-            </main>
-          )}
-        </div>
+          </main>
+        )}
       </div>
 
       {/* Floating Minimized Widget */}

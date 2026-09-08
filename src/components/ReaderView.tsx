@@ -132,84 +132,168 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           onMouseDown={onStartDrag}
           onDoubleClick={onToggleMaximize}
           style={{ WebkitAppRegion: 'drag' } as any}
-          className="shrink-0 flex items-center justify-between px-4 py-2.5 z-30 transition-all border-b border-zinc-200/60 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md cursor-move select-none"
+          className="shrink-0 h-10 flex items-center justify-between px-3 z-30 transition-all border-b border-zinc-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md cursor-move select-none text-xs"
         >
-          {/* Left: Document Info & Type */}
+          {/* Left: Back button, Document Info & Progress */}
           <div
-            className="flex items-center gap-2.5 min-w-0 max-w-[50%]"
+            className="flex items-center gap-2 min-w-0 max-w-[45%]"
             style={{ WebkitAppRegion: 'no-drag' } as any}
             onMouseDown={(e) => e.stopPropagation()}
           >
+            {/* Back to Document List */}
+            <button
+              type="button"
+              id="reader-back-to-list-btn"
+              onClick={onClose}
+              className="px-2 py-1 rounded text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 flex items-center gap-1 transition-colors"
+              title="返回文件列表 (Esc)"
+            >
+              <span className="font-semibold text-xs">‹</span>
+              <span>列表</span>
+            </button>
+
             <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 ${
+              className={`w-5 h-5 rounded-xs flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
                 document.type === 'pdf' ? 'bg-rose-500' : 'bg-blue-600'
               }`}
             >
-              {document.type === 'pdf' ? 'PDF' : 'TXT'}
+              {document.type === 'pdf' ? 'P' : 'T'}
             </div>
 
-            <div className="min-w-0">
-              <h1
-                className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate"
-                title={document.name}
-              >
-                {document.name}
-              </h1>
-            </div>
+            <h1
+              className="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate"
+              title={document.name}
+            >
+              {document.name}
+            </h1>
 
-            {/* Reading Progress Pill */}
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs font-mono shrink-0">
-              <BookOpen className="w-3 h-3 text-zinc-400" />
-              <span>进度: {document.progress}%</span>
-              {document.type === 'pdf' && document.totalPages && (
-                <span className="opacity-70">
-                  ({document.currentPage || 1}/{document.totalPages}页)
-                </span>
-              )}
-            </div>
+            {/* Reading Progress */}
+            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-[11px] font-mono shrink-0">
+              {document.progress}%
+            </span>
           </div>
 
-          {/* Center hint for Tab shortcut */}
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-400 pointer-events-none">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[11px] font-mono text-zinc-600 dark:text-zinc-300 shadow-2xs">
-              Tab
-            </kbd>
-            <span>键隐藏顶部栏与边框</span>
-          </div>
-
-          {/* Right Toolbar: 【设置】，【最小化】，【关闭】 */}
+          {/* Center: Quick Background Presets & Font Size */}
           <div
-            className="flex items-center gap-1.5 shrink-0"
+            className="hidden md:flex items-center gap-3 shrink-0"
             style={{ WebkitAppRegion: 'no-drag' } as any}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            {/* Quick Toggle Toolbar Button */}
+            {/* Background Mode Pills */}
+            <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-md border border-zinc-200/80 dark:border-zinc-700/80">
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ ...settings, bgColor: 'transparent' })}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                  settings.bgColor === 'transparent'
+                    ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-2xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
+                }`}
+                title="透明背景 (沉浸悬浮)"
+              >
+                透明
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ ...settings, bgColor: 'white' })}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                  settings.bgColor === 'white'
+                    ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-2xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
+                }`}
+                title="纯白背景"
+              >
+                浅白
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ ...settings, bgColor: 'book' })}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                  settings.bgColor === 'book'
+                    ? 'bg-[#f4ecd8] text-[#5c3e1e] font-semibold shadow-2xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
+                }`}
+                title="护眼羊皮纸背景"
+              >
+                羊皮纸
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ ...settings, bgColor: 'dark' })}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                  settings.bgColor === 'dark'
+                    ? 'bg-zinc-950 text-white font-semibold shadow-2xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
+                }`}
+                title="暗黑背景"
+              >
+                暗黑
+              </button>
+            </div>
+
+            {/* Quick Font Size Adjust */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateSettings({ ...settings, fontSize: Math.max(12, settings.fontSize - 1) })
+                }
+                className="w-6 h-6 rounded flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors font-bold text-xs"
+                title="缩小字号"
+              >
+                A-
+              </button>
+              <span className="text-[11px] text-zinc-500 font-mono w-5 text-center">
+                {settings.fontSize}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateSettings({ ...settings, fontSize: Math.min(36, settings.fontSize + 1) })
+                }
+                className="w-6 h-6 rounded flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors font-bold text-xs"
+                title="放大字号"
+              >
+                A+
+              </button>
+            </div>
+          </div>
+
+          {/* Right Toolbar: Settings & Windows Caption Buttons */}
+          <div
+            className="flex items-center h-full shrink-0"
+            style={{ WebkitAppRegion: 'no-drag' } as any}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Quick Hide Toolbar (Tab) */}
             <button
               type="button"
               id="toolbar-toggle-btn"
               onClick={() => setIsToolbarVisible(false)}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              title="隐藏工具栏与边框 (按 Tab 键可再次显示)"
+              className="h-8 px-2 mr-1 rounded text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1"
+              title="隐藏边框与工具栏 (快捷键: Tab)"
             >
-              <EyeOff className="w-4 h-4" />
+              <EyeOff className="w-3.5 h-3.5" />
+              <span className="text-[11px] hidden sm:inline">隐藏栏 (Tab)</span>
             </button>
 
-            {/* 【设置】 */}
+            {/* Settings Button */}
             <button
               type="button"
               id="reader-settings-btn"
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200/80 dark:border-zinc-700"
+              className="h-8 px-2.5 mr-2 rounded text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 border border-zinc-200/80 dark:border-zinc-700"
               title="阅读外观与排版设置"
             >
               <Settings className="w-3.5 h-3.5 text-zinc-500" />
               <span>设置</span>
             </button>
 
-            {/* 【最小化】 */}
+            {/* Windows Caption Controls */}
+            {/* Minimize */}
             <button
               type="button"
-              id="reader-minimize-btn"
+              id="reader-win-minimize-btn"
               onClick={() => {
                 if (window.electronAPI?.isElectron) {
                   window.electronAPI.minimize();
@@ -217,23 +301,47 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
                   onMinimize();
                 }
               }}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              title="最小化阅读窗口"
+              className="h-10 w-10 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 active:bg-zinc-300/70 transition-colors"
+              title="最小化"
+              aria-label="最小化"
             >
-              <Minus className="w-4 h-4" />
+              <svg className="w-3 h-3" viewBox="0 0 10 1" fill="currentColor">
+                <rect width="10" height="1" />
+              </svg>
             </button>
 
-            {/* 【关闭】 */}
+            {/* Maximize / Restore */}
             <button
               type="button"
-              id="reader-close-btn"
+              id="reader-win-maximize-btn"
               onClick={() => {
-                onClose();
+                if (window.electronAPI?.isElectron) {
+                  window.electronAPI.maximize();
+                } else {
+                  onToggleMaximize?.();
+                }
               }}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-              title="退出阅读并返回文件列表 (Esc)"
+              className="h-10 w-10 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 active:bg-zinc-300/70 transition-colors"
+              title="最大化 / 还原"
+              aria-label="最大化 / 还原"
             >
-              <X className="w-4 h-4" />
+              <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+                <rect x="0.5" y="0.5" width="9" height="9" />
+              </svg>
+            </button>
+
+            {/* Close / Return */}
+            <button
+              type="button"
+              id="reader-win-close-btn"
+              onClick={onClose}
+              className="h-10 w-10 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-[#e81123] hover:text-white active:bg-[#c4101f] transition-colors"
+              title="退出阅读模式 (Esc)"
+              aria-label="退出阅读模式"
+            >
+              <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+                <path d="M1 1L9 9M9 1L1 9" />
+              </svg>
             </button>
           </div>
         </header>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Minus, Square, X, BookOpen, Maximize2, Minimize2 } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 interface DesktopHeaderProps {
   title?: string;
@@ -51,64 +51,79 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
       onMouseDown={onStartDrag}
       onDoubleClick={() => handleToggleMaximize()}
       style={{ WebkitAppRegion: 'drag' } as any}
-      className="h-10 bg-zinc-950 text-zinc-300 px-3 flex items-center justify-between select-none border-b border-zinc-800/80 text-xs shrink-0 cursor-move"
+      className="h-9 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-200 flex items-center justify-between select-none border-b border-zinc-200/80 dark:border-zinc-800 text-xs shrink-0 cursor-move"
     >
-      {/* Window Controls (macOS style dots) */}
+      {/* Left: Windows App Icon & Title */}
       <div
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 pl-3 pointer-events-none"
         style={{ WebkitAppRegion: 'no-drag' } as any}
-        onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-1.5 mr-2">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="w-3 h-3 rounded-full bg-rose-500 hover:bg-rose-600 transition-colors flex items-center justify-center group"
-            title="关闭窗口"
-          >
-            <X className="w-2 h-2 text-rose-900 opacity-0 group-hover:opacity-100" />
-          </button>
-          <button
-            type="button"
-            onClick={handleMinimize}
-            className="w-3 h-3 rounded-full bg-amber-500 hover:bg-amber-600 transition-colors flex items-center justify-center group"
-            title="最小化"
-          >
-            <Minus className="w-2 h-2 text-amber-900 opacity-0 group-hover:opacity-100" />
-          </button>
-          <button
-            type="button"
-            onClick={handleToggleMaximize}
-            className="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 transition-colors flex items-center justify-center group"
-            title={isMaximized ? '还原窗口' : '最大化窗口'}
-          >
-            <Square className="w-1.5 h-1.5 text-emerald-900 opacity-0 group-hover:opacity-100" />
-          </button>
+        <div className="w-4 h-4 rounded-xs bg-blue-600 flex items-center justify-center text-white shadow-2xs">
+          <BookOpen className="w-2.5 h-2.5" />
         </div>
-
-        <div className="flex items-center gap-1.5 text-zinc-400 font-medium text-xs pointer-events-none">
-          <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
-          <span className="text-zinc-200 font-normal truncate max-w-[320px] sm:max-w-md">{title}</span>
-        </div>
+        <span className="font-medium text-xs text-zinc-800 dark:text-zinc-200 tracking-tight">
+          {title}
+        </span>
       </div>
 
-      {/* Right Actions: Maximize toggle */}
+      {/* Center Draggable Spacer */}
+      <div className="flex-1 h-full" />
+
+      {/* Right: Windows Standard Caption Controls */}
       <div
-        className="flex items-center gap-2"
+        className="flex items-center h-full"
         style={{ WebkitAppRegion: 'no-drag' } as any}
         onMouseDown={(e) => e.stopPropagation()}
       >
+        {/* Minimize Button */}
         <button
           type="button"
+          id="win-btn-minimize"
+          onClick={handleMinimize}
+          className="h-9 w-11 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 active:bg-zinc-300/70 transition-colors"
+          title="最小化"
+          aria-label="最小化"
+        >
+          <svg className="w-3 h-3" viewBox="0 0 10 1" fill="currentColor">
+            <rect width="10" height="1" />
+          </svg>
+        </button>
+
+        {/* Maximize / Restore Button */}
+        <button
+          type="button"
+          id="win-btn-maximize"
           onClick={handleToggleMaximize}
-          className="p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
-          title={isMaximized ? '还原窗口' : '最大化窗口'}
+          className="h-9 w-11 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 active:bg-zinc-300/70 transition-colors"
+          title={isMaximized ? '向下还原' : '最大化'}
+          aria-label={isMaximized ? '向下还原' : '最大化'}
         >
           {isMaximized ? (
-            <Minimize2 className="w-3.5 h-3.5" />
+            /* Dual Overlapping Squares (Windows Restore) */
+            <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+              <path d="M2.5 2.5V0.5H9.5V7.5H7.5" />
+              <rect x="0.5" y="2.5" width="7" height="7" />
+            </svg>
           ) : (
-            <Maximize2 className="w-3.5 h-3.5" />
+            /* Single Square (Windows Maximize) */
+            <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+              <rect x="0.5" y="0.5" width="9" height="9" />
+            </svg>
           )}
+        </button>
+
+        {/* Close Button (Windows Standard Red Hover) */}
+        <button
+          type="button"
+          id="win-btn-close"
+          onClick={handleClose}
+          className="h-9 w-11 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-[#e81123] hover:text-white active:bg-[#c4101f] transition-colors"
+          title="关闭"
+          aria-label="关闭"
+        >
+          <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+            <path d="M1 1L9 9M9 1L1 9" />
+          </svg>
         </button>
       </div>
     </header>
