@@ -71,18 +71,25 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       .filter((p) => p.length > 0);
   }, [content]);
 
+  const isClickThrough =
+    settings.bgColor === 'transparent' &&
+    Boolean(settings.transparentClickThrough) &&
+    !isBorderVisible;
+
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
       onClick={handleContainerClick}
-      onMouseDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => {
+        if (!isClickThrough) e.stopPropagation();
+      }}
       id="txt-reader-scroll-container"
       className={`w-full h-full overflow-y-auto px-4 py-2 sm:px-10 sm:py-6 md:px-16 select-text outline-hidden ${
         isBorderVisible ? '' : 'hide-scrollbar'
       }`}
       style={{
-        pointerEvents: 'auto',
+        pointerEvents: isClickThrough ? 'none' : 'auto',
         color: settings.fontColor,
         fontSize: `${settings.fontSize}px`,
         lineHeight: settings.lineHeight,

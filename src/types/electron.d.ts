@@ -13,6 +13,7 @@ export interface IElectronAPI {
   close: () => void;
   isMaximized: () => Promise<boolean>;
   setAlwaysOnTop: (flag: boolean) => void;
+  setIgnoreMouseEvents: (ignore: boolean, options?: { forward: boolean }) => void;
   openFileDialog: () => Promise<ElectronFileResult | null>;
   startWindowDrag: (coords: { screenX: number; screenY: number }) => void;
   moveWindowDrag: (coords: { screenX: number; screenY: number }) => void;

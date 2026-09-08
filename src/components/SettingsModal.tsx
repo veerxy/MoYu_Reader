@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, RotateCcw, Sliders, Type, Palette, LayoutGrid, Check } from 'lucide-react';
+import { X, RotateCcw, Sliders, Type, Palette, LayoutGrid, Check, MousePointer } from 'lucide-react';
 import { ReaderSettings, BackgroundColorType } from '../types';
 import { DEFAULT_SETTINGS } from '../utils/storage';
 
@@ -51,21 +51,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     },
   ];
 
-  const isCustomColor = !fontColorPresets.some((p) => p.value === settings.fontColor);
-
   return (
     <div
       id="settings-modal-backdrop"
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 md:p-8 animate-fadeIn overflow-hidden"
     >
       <div
         id="settings-modal-dialog"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden"
+        className="relative flex flex-col w-full max-w-md max-h-[calc(100%-2.5rem)] sm:max-h-[calc(100%-3.5rem)] bg-white rounded-2xl shadow-2xl border border-zinc-200/90 overflow-hidden my-auto"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50/80">
+        <div className="shrink-0 flex items-center justify-between px-5 py-3.5 sm:px-6 sm:py-4 border-b border-zinc-100 bg-zinc-50/80">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center">
               <Sliders className="w-4 h-4" />
@@ -86,7 +84,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* 1. 字体大小 */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -332,18 +330,121 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               })}
             </div>
 
-            {settings.bgColor === 'transparent' && (
-              <div className="mt-2 p-2.5 rounded-lg bg-blue-50/80 border border-blue-200/80 text-[12px] text-blue-800 leading-relaxed">
-                ✨ <strong>透明防护说明：</strong>
-                已启用透明背景阅读模式。客户端容器拦截并处理所有点击、选择与滚动操作，
-                <strong>鼠标点击绝不会穿透至下层桌面</strong>。
+            {/* 5. 透明模式鼠标穿透设置 (只针对透明模式) */}
+            <div className="space-y-2.5 pt-3 border-t border-zinc-100">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-zinc-900 flex items-center gap-1.5">
+                  <MousePointer className="w-4 h-4 text-zinc-600" />
+                  <span>透明模式鼠标穿透</span>
+                </label>
+                {settings.bgColor === 'transparent' ? (
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded font-medium ${
+                      settings.transparentClickThrough
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-emerald-100 text-emerald-800'
+                    }`}
+                  >
+                    {settings.transparentClickThrough ? '已允许穿透' : '不穿透 (保持在客户端)'}
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-zinc-400">仅在透明背景模式可用</span>
+                )}
               </div>
-            )}
+
+              {settings.bgColor === 'transparent' ? (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* 选项 1: 不允许穿透 (默认) */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateSettings({ ...settings, transparentClickThrough: false })
+                      }
+                      className={`p-3 rounded-xl border flex flex-col items-start gap-1 text-left transition-all ${
+                        !settings.transparentClickThrough
+                          ? 'ring-2 ring-zinc-900 border-zinc-900 bg-zinc-50/80 shadow-xs'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold text-zinc-900">
+                          不允许穿透 (默认)
+                        </span>
+                        {!settings.transparentClickThrough && (
+                          <Check className="w-4 h-4 text-zinc-900" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-zinc-500 leading-snug">
+                        点击与操作仅保持在当前客户端，绝不误触下层桌面或窗口。
+                      </p>
+                    </button>
+
+                    {/* 选项 2: 允许穿透 */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateSettings({ ...settings, transparentClickThrough: true })
+                      }
+                      className={`p-3 rounded-xl border flex flex-col items-start gap-1 text-left transition-all ${
+                        settings.transparentClickThrough
+                          ? 'ring-2 ring-zinc-900 border-zinc-900 bg-zinc-50/80 shadow-xs'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold text-zinc-900">允许穿透</span>
+                        {settings.transparentClickThrough && (
+                          <Check className="w-4 h-4 text-zinc-900" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-zinc-500 leading-snug">
+                        点击直接穿透到下一层页面/桌面，便于彻底隐蔽悬浮。
+                      </p>
+                    </button>
+                  </div>
+
+                  <div
+                    className={`p-2.5 rounded-lg border text-[11px] leading-relaxed transition-colors ${
+                      settings.transparentClickThrough
+                        ? 'bg-amber-50/90 border-amber-200 text-amber-800'
+                        : 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
+                    }`}
+                  >
+                    {settings.transparentClickThrough ? (
+                      <span>
+                        ⚠️ <strong>已开启穿透：</strong>隐藏顶栏时鼠标点击将穿透至下层桌面或软件。随时按键盘 <strong>Tab</strong> 键可重新呼出顶栏恢复控制。
+                      </span>
+                    ) : (
+                      <span>
+                        🛡️ <strong>已开启防护：</strong>鼠标点击与滚动均被阅读器拦截，绝不误触下方的其他软件。
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-400 flex items-center justify-between">
+                  <span>当前为有色模式，穿透功能仅在「透明背景」下生效</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdateSettings({
+                        ...settings,
+                        bgColor: 'transparent',
+                      })
+                    }
+                    className="px-2 py-1 rounded text-[11px] font-medium bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-100 transition-colors"
+                  >
+                    切换透明
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-100 bg-zinc-50/80">
+        <div className="shrink-0 flex items-center justify-between px-5 py-3.5 sm:px-6 sm:py-4 border-t border-zinc-100 bg-zinc-50/80">
           <button
             type="button"
             onClick={() => onUpdateSettings(DEFAULT_SETTINGS)}

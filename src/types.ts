@@ -26,6 +26,7 @@ export interface ReaderSettings {
   bgColor: BackgroundColorType; // 'transparent' | 'dark' | 'white' | 'book'
   fontFamily: string;
   textAlign: 'left' | 'justify';
+  transparentClickThrough?: boolean; // 针对透明模式：允许穿透(true)点击下一层页面；不允许(false)只保持在当前客户端
 }
 
 export interface WindowState {

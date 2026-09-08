@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   bgColor: 'transparent', // Reading mode default transparent
   fontFamily: 'system-ui, -apple-system, sans-serif',
   textAlign: 'left',
+  transparentClickThrough: false, // 默认不允许穿透，只保持在当前客户端
 };
 
 function openDB(): Promise<IDBDatabase> {

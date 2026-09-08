@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('window-close'),
   isMaximized: () => ipcRenderer.invoke('is-maximized'),
   setAlwaysOnTop: (flag) => ipcRenderer.send('set-always-on-top', flag),
+  setIgnoreMouseEvents: (ignore, options) => ipcRenderer.send('set-ignore-mouse-events', ignore, options),
   openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
   startWindowDrag: (coords) => ipcRenderer.send('window-drag-start', coords),
   moveWindowDrag: (coords) => ipcRenderer.send('window-drag-move', coords),

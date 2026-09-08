@@ -182,18 +182,27 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentPage, totalPages, pdfDoc]);
 
-  // Click-through prevention on transparent mode
+  // Click-through prevention or enable on transparent mode
+  const isClickThrough =
+    settings.bgColor === 'transparent' &&
+    Boolean(settings.transparentClickThrough) &&
+    !isBorderVisible;
+
   const handleContainerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    if (!isClickThrough) {
+      e.stopPropagation();
+    }
   };
 
   return (
     <div
       onClick={handleContainerClick}
-      onMouseDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => {
+        if (!isClickThrough) e.stopPropagation();
+      }}
       id="pdf-reader-container"
       className="w-full h-full flex flex-col items-center select-text outline-hidden overflow-hidden"
-      style={{ pointerEvents: 'auto' }}
+      style={{ pointerEvents: isClickThrough ? 'none' : 'auto' }}
     >
       {/* PDF Floating Control Bar */}
       <div

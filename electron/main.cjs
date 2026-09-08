@@ -148,6 +148,17 @@ ipcMain.on('set-always-on-top', (event, flag) => {
   if (mainWindow) mainWindow.setAlwaysOnTop(Boolean(flag));
 });
 
+// 透明模式鼠标穿透控制
+ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+  if (mainWindow) {
+    if (ignore) {
+      mainWindow.setIgnoreMouseEvents(true, options || { forward: true });
+    } else {
+      mainWindow.setIgnoreMouseEvents(false);
+    }
+  }
+});
+
 // 鼠标长按拖拽移动窗口
 let dragOffset = null;
 
