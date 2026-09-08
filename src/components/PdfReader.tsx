@@ -26,6 +26,7 @@ interface PdfReaderProps {
   data: ArrayBuffer | string; // ArrayBuffer or base64
   settings: ReaderSettings;
   initialPage?: number;
+  isBorderVisible?: boolean;
   onProgressChange: (progressPercent: number, page: number, totalPages: number) => void;
 }
 
@@ -33,6 +34,7 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   data,
   settings,
   initialPage = 1,
+  isBorderVisible = false,
   onProgressChange,
 }) => {
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -260,7 +262,9 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
       {/* Main PDF Canvas Scroll Viewport */}
       <div
         id="pdf-canvas-viewport"
-        className="flex-1 w-full overflow-auto flex items-start justify-center p-4 sm:p-8"
+        className={`flex-1 w-full overflow-auto flex items-start justify-center p-4 sm:p-8 ${
+          isBorderVisible ? '' : 'hide-scrollbar'
+        }`}
       >
         {isLoading && (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-zinc-500">

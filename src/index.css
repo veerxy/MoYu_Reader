@@ -32,3 +32,14 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(160, 160, 160, 0.45);
 }
+
+/* Hide scrollbar utility for immersive reading without border */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Opera */
+  width: 0 !important;
+  height: 0 !important;
+}

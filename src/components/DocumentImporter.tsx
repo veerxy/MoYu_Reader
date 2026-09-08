@@ -131,6 +131,38 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
     }
   };
 
+  const handleTriggerFileSelect = async () => {
+    if (window.electronAPI?.isElectron) {
+      try {
+        setIsProcessing(true);
+        const res = await window.electronAPI.openFileDialog();
+        if (res) {
+          const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          const newDoc: DocumentItem = {
+            id: docId,
+            name: res.name,
+            type: res.type,
+            size: res.size,
+            progress: 0,
+            lastOpened: Date.now(),
+            content: res.content,
+            pdfDataUrl: res.dataUrl,
+          };
+          await saveDocument(newDoc);
+          onDocumentImported(newDoc);
+          setSuccessMessage(`已成功导入《${res.name}》`);
+          setTimeout(() => setSuccessMessage(null), 3000);
+        }
+      } catch (err) {
+        setErrorMessage('导入文件失败，请重试');
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className={`w-full ${className}`}>
       <input
@@ -147,41 +179,33 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`relative cursor-pointer transition-all duration-200 rounded-xl border-2 border-dashed p-7 flex flex-col items-center justify-center text-center group ${
+        className={`relative transition-all duration-200 rounded-xl border border-dashed p-4 flex items-center justify-between gap-4 ${
           isDragging
-            ? 'border-blue-500 bg-blue-50/60 scale-[1.005]'
-            : 'border-zinc-300 hover:border-zinc-400 bg-zinc-50/80 hover:bg-zinc-100/70'
+            ? 'border-blue-500 bg-blue-50/50'
+            : 'border-zinc-300 hover:border-zinc-400 bg-white shadow-2xs'
         }`}
       >
-        <div className="w-12 h-12 rounded-xl bg-white shadow-sm border border-zinc-200 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-          <Upload className={`w-6 h-6 ${isDragging ? 'text-blue-600' : 'text-zinc-600'}`} />
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600 shrink-0">
+            <Upload className={`w-4 h-4 ${isDragging ? 'text-blue-600' : 'text-zinc-600'}`} />
+          </div>
+          <div className="text-xs text-zinc-600 truncate">
+            拖拽本地 <span className="font-medium text-zinc-900">TXT</span> 或{' '}
+            <span className="font-medium text-zinc-900">PDF</span> 文档到此处，或点击右侧选择
+          </div>
         </div>
 
-        <h3 className="text-base font-semibold text-zinc-900 mb-1 flex items-center gap-1.5">
-          <span>导入本地文档进行阅读</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-200/80 text-zinc-700 font-normal">
-            支持 TXT / PDF
-          </span>
-        </h3>
-
-        <p className="text-sm text-zinc-500 max-w-md">
-          点击或直接将本地文档拖拽至此处，系统将自动解析排版并记录您的专属阅读进度
-        </p>
-
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            type="button"
-            className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg shadow-sm transition-colors flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            <span>选择本地文件</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleTriggerFileSelect}
+          className="px-3.5 py-1.5 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors shrink-0 cursor-pointer"
+        >
+          选择本地文件
+        </button>
 
         {isProcessing && (
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-xs rounded-xl flex items-center justify-center gap-2 text-sm text-zinc-700 font-medium">
-            <div className="w-4 h-4 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-xs rounded-xl flex items-center justify-center gap-2 text-xs text-zinc-700 font-medium">
+            <div className="w-3.5 h-3.5 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
             <span>正在解析并加载文档内容...</span>
           </div>
         )}
@@ -190,9 +214,9 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
       {errorMessage && (
         <div
           id="import-error-banner"
-          className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm animate-fadeIn"
+          className="mt-2 flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs animate-fadeIn"
         >
-          <AlertCircle className="w-4 h-4 shrink-0" />
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -200,9 +224,9 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
       {successMessage && (
         <div
           id="import-success-banner"
-          className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm animate-fadeIn"
+          className="mt-2 flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs animate-fadeIn"
         >
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}

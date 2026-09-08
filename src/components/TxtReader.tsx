@@ -6,6 +6,7 @@ interface TxtReaderProps {
   settings: ReaderSettings;
   initialScrollPercent?: number;
   initialScrollTop?: number;
+  isBorderVisible?: boolean;
   onProgressChange: (progressPercent: number, scrollTop: number) => void;
 }
 
@@ -14,6 +15,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   settings,
   initialScrollPercent = 0,
   initialScrollTop,
+  isBorderVisible = false,
   onProgressChange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,7 +78,9 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       onClick={handleContainerClick}
       onMouseDown={(e) => e.stopPropagation()}
       id="txt-reader-scroll-container"
-      className="w-full h-full overflow-y-auto px-6 py-10 sm:px-12 md:px-20 select-text outline-hidden"
+      className={`w-full h-full overflow-y-auto px-6 py-10 sm:px-12 md:px-20 select-text outline-hidden ${
+        isBorderVisible ? '' : 'hide-scrollbar'
+      }`}
       style={{
         pointerEvents: 'auto',
         color: settings.fontColor,

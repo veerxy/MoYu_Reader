@@ -46,48 +46,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className={`w-64 sm:w-72 bg-zinc-900 text-zinc-200 flex flex-col h-full shrink-0 border-r border-zinc-800 select-none ${className}`}
     >
       {/* App Brand Header */}
-      <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shadow-inner">
-            <BookOpen className="w-4 h-4 text-blue-400" />
+      <div className="p-3.5 border-b border-zinc-800/80 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
+            <BookOpen className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-white">文档阅读器</h2>
-            <p className="text-[11px] text-zinc-400">桌面端客户端</p>
-          </div>
+          <h2 className="text-sm font-medium tracking-tight text-zinc-200">文档阅读器</h2>
         </div>
 
         <button
           type="button"
           onClick={onOpenImporter}
           title="导入本地文档 (.txt / .pdf)"
-          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
+          className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
         >
           <Upload className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Quick Action Button */}
-      <div className="p-3">
-        <button
-          type="button"
-          id="sidebar-import-btn"
-          onClick={onOpenImporter}
-          className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
-        >
-          <FolderOpen className="w-3.5 h-3.5" />
-          <span>导入本地 TXT / PDF</span>
-        </button>
-      </div>
-
       {/* Recent Files Navigation List */}
-      <div className="flex-1 overflow-y-auto px-2 space-y-1">
-        <div className="px-2 py-1.5 text-[11px] font-medium text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <Clock className="w-3 h-3" />
-            <span>最近打开文档</span>
-          </span>
-          <span className="text-[10px] bg-zinc-800 px-1.5 py-0.5 rounded-full text-zinc-300">
+      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+        <div className="px-2 py-1 text-[11px] text-zinc-500 flex items-center justify-between">
+          <span>最近打开</span>
+          <span className="text-[10px] bg-zinc-800 px-1.5 py-0.5 rounded-full text-zinc-400">
             {documents.length}
           </span>
         </div>

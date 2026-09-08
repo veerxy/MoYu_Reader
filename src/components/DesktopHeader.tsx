@@ -1,88 +1,115 @@
 import React from 'react';
-import { Minus, Square, X, BookOpen, Monitor, Sparkles } from 'lucide-react';
+import { Minus, Square, X, BookOpen, Maximize2, Minimize2 } from 'lucide-react';
 
 interface DesktopHeaderProps {
   title?: string;
   onMinimize?: () => void;
   onClose?: () => void;
-  isDesktopBgActive?: boolean;
-  onToggleDesktopBg?: () => void;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
+  onStartDrag?: (e: React.MouseEvent) => void;
 }
 
 export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
-  title = '文档阅读器 (桌面客户端)',
+  title = '文档阅读器',
   onMinimize,
   onClose,
-  isDesktopBgActive,
-  onToggleDesktopBg,
+  isMaximized = false,
+  onToggleMaximize,
+  onStartDrag,
 }) => {
+  const handleMinimize = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.electronAPI?.isElectron) {
+      window.electronAPI.minimize();
+    } else {
+      onMinimize?.();
+    }
+  };
+
+  const handleToggleMaximize = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (window.electronAPI?.isElectron) {
+      window.electronAPI.maximize();
+    } else {
+      onToggleMaximize?.();
+    }
+  };
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.electronAPI?.isElectron) {
+      window.electronAPI.close();
+    } else {
+      onClose?.();
+    }
+  };
+
   return (
     <header
       id="desktop-window-titlebar"
-      className="h-10 bg-zinc-950 text-zinc-300 px-3 flex items-center justify-between select-none border-b border-zinc-800 text-xs shrink-0"
+      onMouseDown={onStartDrag}
+      onDoubleClick={() => handleToggleMaximize()}
+      style={{ WebkitAppRegion: 'drag' } as any}
+      className="h-10 bg-zinc-950 text-zinc-300 px-3 flex items-center justify-between select-none border-b border-zinc-800/80 text-xs shrink-0 cursor-move"
     >
       {/* Window Controls (macOS style dots) */}
-      <div className="flex items-center gap-2">
+      <div
+        className="flex items-center gap-2"
+        style={{ WebkitAppRegion: 'no-drag' } as any}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center gap-1.5 mr-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="w-3 h-3 rounded-full bg-rose-500 hover:bg-rose-600 transition-colors flex items-center justify-center group"
-            title="关闭客户端"
+            title="关闭窗口"
           >
             <X className="w-2 h-2 text-rose-900 opacity-0 group-hover:opacity-100" />
           </button>
           <button
             type="button"
-            onClick={onMinimize}
+            onClick={handleMinimize}
             className="w-3 h-3 rounded-full bg-amber-500 hover:bg-amber-600 transition-colors flex items-center justify-center group"
-            title="最小化窗口"
+            title="最小化"
           >
             <Minus className="w-2 h-2 text-amber-900 opacity-0 group-hover:opacity-100" />
           </button>
           <button
             type="button"
+            onClick={handleToggleMaximize}
             className="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 transition-colors flex items-center justify-center group"
-            title="缩放窗口"
+            title={isMaximized ? '还原窗口' : '最大化窗口'}
           >
             <Square className="w-1.5 h-1.5 text-emerald-900 opacity-0 group-hover:opacity-100" />
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 text-zinc-400 font-medium text-xs">
-          <BookOpen className="w-3.5 h-3.5 text-blue-400" />
-          <span className="text-zinc-200">{title}</span>
+        <div className="flex items-center gap-1.5 text-zinc-400 font-medium text-xs pointer-events-none">
+          <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
+          <span className="text-zinc-200 font-normal truncate max-w-[320px] sm:max-w-md">{title}</span>
         </div>
       </div>
 
-      {/* Center Shortcuts Badge */}
-      <div className="hidden sm:flex items-center gap-2 text-[11px] text-zinc-500">
-        <span>快捷提示:</span>
-        <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px]">
-          Tab
-        </span>
-        <span>显隐阅读工具栏与边框</span>
-      </div>
-
-      {/* Right Desktop Environment / Wallpaper toggle */}
-      <div className="flex items-center gap-2">
-        {onToggleDesktopBg && (
-          <button
-            type="button"
-            onClick={onToggleDesktopBg}
-            className={`px-2 py-1 rounded text-[11px] flex items-center gap-1.5 transition-colors ${
-              isDesktopBgActive
-                ? 'bg-blue-600/30 text-blue-300 border border-blue-500/30'
-                : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-200'
-            }`}
-            title="切换桌面壁纸预览背景，方便查看透明阅读模式效果"
-          >
-            <Monitor className="w-3 h-3" />
-            <span className="hidden md:inline">
-              {isDesktopBgActive ? '桌面壁纸: 已开启' : '桌面壁纸: 纯净'}
-            </span>
-          </button>
-        )}
+      {/* Right Actions: Maximize toggle */}
+      <div
+        className="flex items-center gap-2"
+        style={{ WebkitAppRegion: 'no-drag' } as any}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={handleToggleMaximize}
+          className="p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+          title={isMaximized ? '还原窗口' : '最大化窗口'}
+        >
+          {isMaximized ? (
+            <Minimize2 className="w-3.5 h-3.5" />
+          ) : (
+            <Maximize2 className="w-3.5 h-3.5" />
+          )}
+        </button>
       </div>
     </header>
   );
