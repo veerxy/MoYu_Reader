@@ -1,0 +1,6 @@
+{
+  "name": "文档阅读器",
+  "description": "轻量桌面端文档阅读器，支持 TXT 与 PDF 本地导入、最近文件列表、阅读进度记忆、透明背景沉浸阅读及 Tab 快捷显隐。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
