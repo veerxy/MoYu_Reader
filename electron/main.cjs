@@ -56,10 +56,10 @@ function createWindow() {
   const savedState = loadSavedWindowState();
 
   const winOptions = {
-    width: Math.max(420, savedState.width || 1040),
-    height: Math.max(300, savedState.height || 720),
-    minWidth: 420,
-    minHeight: 300,
+    width: Math.max(200, savedState.width || 1040),
+    height: Math.max(20, savedState.height || 720),
+    minWidth: 200,
+    minHeight: 0, // 不限制最小高度，用户可任意压缩调整至极窄/单行高度
     frame: false, // 无边框窗口，由应用内自定义标题栏控制
     transparent: true, // 支持透明背景，使透明阅读模式文字悬浮在桌面
     hasShadow: true,

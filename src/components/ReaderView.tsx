@@ -104,6 +104,21 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     }
   };
 
+  // 用户需求：阅读窗口的×直接关闭应用程序即可
+  const handleCloseApp = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (window.electronAPI?.isElectron) {
+      window.electronAPI.close();
+    } else {
+      try {
+        window.close();
+      } catch (err) {
+        // ignore
+      }
+      onClose();
+    }
+  };
+
   // Requirement 2.1: "背景如果选择透明，鼠标在客户端的点击事件不可穿透到下一层"
   const handleReaderClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -326,14 +341,14 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               </svg>
             </button>
 
-            {/* Close / Return */}
+            {/* Close Application */}
             <button
               type="button"
               id="reader-win-close-btn"
-              onClick={onClose}
+              onClick={handleCloseApp}
               className="h-10 w-10 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-[#e81123] hover:text-white active:bg-[#c4101f] transition-colors"
-              title="退出阅读模式 (Esc)"
-              aria-label="退出阅读模式"
+              title="关闭程序"
+              aria-label="关闭程序"
             >
               <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
                 <path d="M1 1L9 9M9 1L1 9" />

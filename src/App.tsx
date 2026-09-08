@@ -207,7 +207,7 @@ export default function App() {
       )}
 
       {/* Main Workspace */}
-      <div className="flex-1 w-full h-full flex overflow-hidden relative">
+      <div className="flex-1 min-h-0 w-full h-full flex overflow-hidden relative">
         {/* Active Document Reader View */}
         {isReading && activeDoc && !isMinimized && (
           <ReaderView
