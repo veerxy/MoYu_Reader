@@ -14,6 +14,7 @@ import { RecentFileList } from './components/RecentFileList';
 import { ReaderView } from './components/ReaderView';
 import { MinimizedWidget } from './components/MinimizedWidget';
 import { SettingsModal } from './components/SettingsModal';
+import { useWindowDrag } from './utils/useWindowDrag';
 
 export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -24,6 +25,29 @@ export default function App() {
   const [isGlobalSettingsOpen, setIsGlobalSettingsOpen] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [isMaximized, setIsMaximized] = useState<boolean>(false);
+  const [isReaderToolbarVisible, setIsReaderToolbarVisible] = useState<boolean>(false);
+
+  // 全局支持长按/按住鼠标左键拖动窗口
+  useWindowDrag(isMaximized);
+
+  // 记录调整过的窗口长宽到本地存储（Web 模式回退备用）
+  useEffect(() => {
+    const handleResize = () => {
+      try {
+        localStorage.setItem(
+          'desktop_reader_window_size',
+          JSON.stringify({
+            width: window.innerWidth,
+            height: window.innerHeight,
+          })
+        );
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Sync maximization state with Electron if available
   useEffect(() => {
@@ -157,10 +181,19 @@ export default function App() {
     return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
   };
 
+  // 当不是最大化状态，且不是透明无边框隐蔽模式时，首页和阅读页始终保持四个角圆角与细腻边框
+  const isTransparentStealth =
+    isReading && settings.bgColor === 'transparent' && !isReaderToolbarVisible;
+  const isRounded = !isMaximized && !isTransparentStealth;
+
   return (
     <div
       id="desktop-app-container"
-      className={`w-full h-full min-h-screen overflow-hidden flex flex-col font-sans select-none transition-colors duration-200 ${getContainerBgClass()}`}
+      className={`w-full h-screen max-h-screen overflow-hidden flex flex-col font-sans select-none transition-colors duration-150 ${getContainerBgClass()} ${
+        isRounded
+          ? 'rounded-xl border border-zinc-300/80 dark:border-zinc-700/80 shadow-2xl'
+          : 'rounded-none border-0 shadow-none'
+      }`}
     >
       {/* Windows Standard Titlebar (shown in home view) */}
       {(!isReading || isMinimized) && (
@@ -185,6 +218,7 @@ export default function App() {
             onMinimize={handleMinimizeReading}
             onProgressUpdate={handleProgressUpdate}
             onToggleMaximize={() => setIsMaximized((prev) => !prev)}
+            onBorderVisibilityChange={setIsReaderToolbarVisible}
           />
         )}
 

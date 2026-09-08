@@ -115,11 +115,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
       onClick={handleReaderClick}
       onMouseDown={handleReaderClick}
       onPointerDown={handleReaderClick}
-      className={`relative w-full h-full flex flex-col transition-all duration-300 select-none ${
-        isToolbarVisible
-          ? 'border border-zinc-300/80 shadow-2xl rounded-xl overflow-hidden'
-          : 'border-0 border-transparent shadow-none rounded-none'
-      }`}
+      className="relative w-full h-full flex flex-col transition-all duration-300 select-none overflow-hidden"
       style={{
         ...getBgStyle(),
         pointerEvents: 'auto', // Ensures mouse clicks NEVER penetrate to the layer below

@@ -14,6 +14,9 @@ export interface IElectronAPI {
   isMaximized: () => Promise<boolean>;
   setAlwaysOnTop: (flag: boolean) => void;
   openFileDialog: () => Promise<ElectronFileResult | null>;
+  startWindowDrag: (coords: { screenX: number; screenY: number }) => void;
+  moveWindowDrag: (coords: { screenX: number; screenY: number }) => void;
+  endWindowDrag: () => void;
   onMaximizedChange: (callback: (isMaximized: boolean) => void) => () => void;
 }
 
