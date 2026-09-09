@@ -38,6 +38,7 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-win32-x64-msvc": "*",
+    "@tailwindcss/oxide-win32-x64-msvc": "*",
     "lightningcss-win32-x64-msvc": "*"
   }
 }

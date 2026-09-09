@@ -40,7 +40,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           npm install
-          npm install -D lightningcss-win32-x64-msvc @rollup/rollup-win32-x64-msvc --no-save
+          npm install -D @tailwindcss/oxide-win32-x64-msvc lightningcss-win32-x64-msvc @rollup/rollup-win32-x64-msvc --no-save
 
       - name: Build Tauri Desktop App (.exe & .msi)
         uses: tauri-apps/tauri-action@v0
