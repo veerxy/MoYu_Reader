@@ -1,6 +1,6 @@
 /**
- * 跨平台桌面端适配层 (Desktop API Adapter)
- * 统一支持 Tauri v2、Electron 及 Web 浏览器预览环境
+ * 桌面端适配层 (Tauri v2 Desktop API Adapter)
+ * 专门适配 Tauri v2 原生桌面端与浏览器预览环境
  */
 
 export const isTauri = (): boolean => {
@@ -12,17 +12,12 @@ export const isTauri = (): boolean => {
   );
 };
 
-export const isElectron = (): boolean => {
-  return typeof window !== 'undefined' && Boolean(window.electronAPI?.isElectron);
-};
-
 export const isDesktop = (): boolean => {
-  return isTauri() || isElectron();
+  return isTauri();
 };
 
 export const desktop = {
   isTauri,
-  isElectron,
   isDesktop,
 
   /**
@@ -34,7 +29,7 @@ export const desktop = {
         const { invoke } = await import('@tauri-apps/api/core');
         await invoke('window_close');
         return;
-      } catch (err) {
+      } catch {
         try {
           const { getCurrentWindow } = await import('@tauri-apps/api/window');
           await getCurrentWindow().close();
@@ -43,11 +38,6 @@ export const desktop = {
           console.warn('Tauri close error', e);
         }
       }
-    }
-
-    if (isElectron()) {
-      window.electronAPI?.close();
-      return;
     }
 
     try {
@@ -66,7 +56,7 @@ export const desktop = {
         const { invoke } = await import('@tauri-apps/api/core');
         await invoke('window_minimize');
         return;
-      } catch (err) {
+      } catch {
         try {
           const { getCurrentWindow } = await import('@tauri-apps/api/window');
           await getCurrentWindow().minimize();
@@ -75,10 +65,6 @@ export const desktop = {
           console.warn('Tauri minimize error', e);
         }
       }
-    }
-
-    if (isElectron()) {
-      window.electronAPI?.minimize();
     }
   },
 
@@ -91,7 +77,7 @@ export const desktop = {
         const { invoke } = await import('@tauri-apps/api/core');
         await invoke('window_maximize');
         return;
-      } catch (err) {
+      } catch {
         try {
           const { getCurrentWindow } = await import('@tauri-apps/api/window');
           await getCurrentWindow().toggleMaximize();
@@ -100,10 +86,6 @@ export const desktop = {
           console.warn('Tauri toggleMaximize error', e);
         }
       }
-    }
-
-    if (isElectron()) {
-      window.electronAPI?.maximize();
     }
   },
 
@@ -125,11 +107,6 @@ export const desktop = {
         }
       }
     }
-
-    if (isElectron() && window.electronAPI?.isMaximized) {
-      return await window.electronAPI.isMaximized();
-    }
-
     return false;
   },
 
@@ -152,17 +129,13 @@ export const desktop = {
         }
       }
     }
-
-    if (isElectron()) {
-      window.electronAPI?.setAlwaysOnTop(flag);
-    }
   },
 
   /**
    * 透明模式鼠标穿透控制
    * ignore: true 时鼠标点击事件将穿透到下层桌面/软件；false 时保持在当前客户端
    */
-  setIgnoreMouseEvents: async (ignore: boolean, options?: { forward?: boolean }) => {
+  setIgnoreMouseEvents: async (ignore: boolean) => {
     if (isTauri()) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
@@ -178,19 +151,12 @@ export const desktop = {
         }
       }
     }
-
-    if (isElectron() && window.electronAPI?.setIgnoreMouseEvents) {
-      window.electronAPI.setIgnoreMouseEvents(
-        ignore,
-        options?.forward !== undefined ? { forward: options.forward } : undefined
-      );
-    }
   },
 
   /**
    * 触发窗口拖动（用于无边框窗口任意空白处按住拖动）
    */
-  startDragging: async (coords?: { screenX: number; screenY: number }) => {
+  startDragging: async () => {
     if (isTauri()) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
@@ -206,27 +172,6 @@ export const desktop = {
         }
       }
     }
-
-    if (isElectron() && coords) {
-      window.electronAPI?.startWindowDrag(coords);
-    }
-  },
-
-  /**
-   * 移动窗口拖动（Electron 专用补偿）
-   */
-  moveDragging: (coords: { screenX: number; screenY: number }) => {
-    if (isElectron()) {
-      window.electronAPI?.moveWindowDrag(coords);
-    }
-  },
-
-  /**
-   * 结束拖动
-   */
-  endDragging: () => {
-    if (isElectron()) {
-      window.electronAPI?.endWindowDrag();
-    }
   },
 };
+

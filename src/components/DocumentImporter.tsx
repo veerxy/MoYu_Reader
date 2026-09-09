@@ -131,35 +131,7 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
     }
   };
 
-  const handleTriggerFileSelect = async () => {
-    if (window.electronAPI?.isElectron) {
-      try {
-        setIsProcessing(true);
-        const res = await window.electronAPI.openFileDialog();
-        if (res) {
-          const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          const newDoc: DocumentItem = {
-            id: docId,
-            name: res.name,
-            type: res.type,
-            size: res.size,
-            progress: 0,
-            lastOpened: Date.now(),
-            content: res.content,
-            pdfDataUrl: res.dataUrl,
-          };
-          await saveDocument(newDoc);
-          onDocumentImported(newDoc);
-          setSuccessMessage(`已成功导入《${res.name}》`);
-          setTimeout(() => setSuccessMessage(null), 3000);
-        }
-      } catch (err) {
-        setErrorMessage('导入文件失败，请重试');
-      } finally {
-        setIsProcessing(false);
-      }
-      return;
-    }
+  const handleTriggerFileSelect = () => {
     fileInputRef.current?.click();
   };
 

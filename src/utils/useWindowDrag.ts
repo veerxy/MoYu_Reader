@@ -3,7 +3,7 @@ import { desktop } from './desktop';
 
 /**
  * 全局鼠标长按/按住左键拖动窗口 Hook
- * 支持在客户端内按住鼠标左键拖动原生窗口 (Tauri / Electron)，同时不干扰按钮、输入框、下拉框等交互组件的正常点击
+ * 支持在无边框桌面端 (Tauri v2) 按住鼠标左键拖动原生窗口，同时不干扰按钮、输入框、下拉框等交互组件的正常点击
  */
 export function useWindowDrag(isMaximized: boolean) {
   useEffect(() => {
@@ -47,30 +47,14 @@ export function useWindowDrag(isMaximized: boolean) {
         if (Math.hypot(dx, dy) >= 3) {
           isDragging = true;
           wasDragging = true;
-          document.body.classList.add('cursor-grabbing');
-          desktop.startDragging({
-            screenX: e.screenX,
-            screenY: e.screenY,
-          });
+          desktop.startDragging();
         }
-      }
-
-      if (isDragging) {
-        desktop.moveDragging({
-          screenX: e.screenX,
-          screenY: e.screenY,
-        });
       }
     };
 
     const handleMouseUp = () => {
-      if (isDragging) {
-        document.body.classList.remove('cursor-grabbing');
-        desktop.endDragging();
-      }
       isMouseDown = false;
       isDragging = false;
-      // 在下一次微任务/宏任务后重置 wasDragging，以便拦截本次由释放鼠标触发的 click 事件
       setTimeout(() => {
         wasDragging = false;
       }, 50);
@@ -97,3 +81,4 @@ export function useWindowDrag(isMaximized: boolean) {
     };
   }, [isMaximized]);
 }
+

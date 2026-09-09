@@ -127,9 +127,9 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     !isToolbarVisible &&
     !isSettingsOpen;
 
-  // 同步透明模式鼠标穿透状态到桌面原生窗口 (Tauri / Electron)
+  // 同步透明模式鼠标穿透状态到桌面原生窗口 (Tauri)
   useEffect(() => {
-    desktop.setIgnoreMouseEvents(isCurrentlyClickThrough, { forward: true });
+    desktop.setIgnoreMouseEvents(isCurrentlyClickThrough);
 
     return () => {
       desktop.setIgnoreMouseEvents(false);

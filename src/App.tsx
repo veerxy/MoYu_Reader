@@ -49,18 +49,6 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Sync maximization state with Electron if available
-  useEffect(() => {
-    if (window.electronAPI?.onMaximizedChange) {
-      const cleanup = window.electronAPI.onMaximizedChange((max: boolean) => {
-        setIsMaximized(max);
-      });
-      return () => {
-        if (typeof cleanup === 'function') cleanup();
-      };
-    }
-  }, []);
-
   // Initialize documents from IndexedDB or seed
   useEffect(() => {
     async function initDocs() {
