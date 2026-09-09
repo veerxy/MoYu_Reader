@@ -5,6 +5,10 @@ description = "极简隐蔽桌面文档阅读器 (Tauri 版)"
 authors = ["moyu"]
 edition = "2021"
 
+[lib]
+name = "moyu_reader_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
