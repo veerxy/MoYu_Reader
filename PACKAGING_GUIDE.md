@@ -9,7 +9,9 @@
 1. 将代码推送到您的 GitHub 仓库；
 2. 在仓库的 **Settings** -> **Actions** -> **General** 中，将 **Workflow permissions** 改为 **Read and write permissions** 并保存；
 3. 进入 **Actions** 页面，选择 **Release Tauri App**，点击 **Run workflow**；
-4. 构建完成后，直接在 Releases 页面即可下载打包好的 `.exe` / `.msi` Windows 安装包！
+4. 构建完成后，在 **Releases 页面** 或 Actions 下方的 **Artifacts** 中：
+   - **绿色免安装便携版**：直接下载 `moyu-reader-portable.exe`（单文件，双击直接运行，不需要安装，放在 U 盘或任何目录都能用）；
+   - **安装版**：`moyu-reader_1.0.0_x64-setup.exe` 或 `.msi`（带桌面快捷方式、开始菜单与卸载程序）。
 
 ---
 

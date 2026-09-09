@@ -51,9 +51,40 @@ jobs:
           projectPath: '.'
           tagName: v__VERSION__
           releaseName: 'MoYu Reader v__VERSION__'
-          releaseBody: '极简隐蔽桌面文档阅读器 (Tauri v2 原生桌面端)'
+          releaseBody: |
+            极简隐蔽桌面文档阅读器 (Tauri v2 原生桌面端)
+            
+            - **绿色便携版**：`moyu-reader-portable.exe`（单文件双击即开，免安装）
+            - **Windows 安装包**：`moyu-reader_1.0.0_x64-setup.exe` / `.msi`
           releaseDraft: false
           prerelease: false
+
+      - name: Prepare and Release Portable Executable
+        if: always()
+        shell: pwsh
+        run: |
+          # 查找构建出的单个可执行独立 exe
+          $standaloneExe = "src-tauri/target/release/moyu-reader.exe"
+          if (Test-Path $standaloneExe) {
+            Write-Host "Found standalone executable: $standaloneExe"
+            Copy-Item $standaloneExe -Destination "src-tauri/target/release/moyu-reader-portable.exe"
+            Write-Host "Created portable exe: moyu-reader-portable.exe"
+            
+            # 如果存在 GitHub Release，将绿色单文件直接上传至对应 Release
+            $tag = "v1.0.0"
+            if ($env:GITHUB_TOKEN) {
+              try {
+                gh release upload $tag "src-tauri/target/release/moyu-reader-portable.exe" --clobber
+                Write-Host "Uploaded portable exe to GitHub Release $tag"
+              } catch {
+                Write-Warning "Could not upload via gh cli: $_"
+              }
+            }
+          } else {
+            Write-Warning "moyu-reader.exe not found in src-tauri/target/release"
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Windows exe and msi Artifacts
         if: always()
@@ -61,7 +92,8 @@ jobs:
         with:
           name: moyu-reader-windows
           path: |
+            src-tauri/target/release/moyu-reader-portable.exe
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/*.exe
+            src-tauri/target/release/moyu-reader.exe
           if-no-files-found: warn
