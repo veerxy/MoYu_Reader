@@ -38,7 +38,9 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Install frontend dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install -D lightningcss-win32-x64-msvc @rollup/rollup-win32-x64-msvc --no-save
 
       - name: Build Tauri Desktop App (.exe & .msi)
         uses: tauri-apps/tauri-action@v0
