@@ -1,6 +1,8 @@
 node_modules/
 build/
 dist/
+target/
+src-tauri/target/
 coverage/
 .DS_Store
 *.log

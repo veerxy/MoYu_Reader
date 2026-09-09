@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "com.moyu.reader",
   "build": {
-    "beforeDevCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
