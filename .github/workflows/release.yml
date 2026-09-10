@@ -62,6 +62,7 @@ jobs:
       - name: Prepare and Release Portable Executable
         if: always()
         shell: pwsh
+        continue-on-error: true
         run: |
           # 查找构建出的单个可执行独立 exe
           $standaloneExe = "src-tauri/target/release/moyu-reader.exe"
@@ -70,14 +71,25 @@ jobs:
             Copy-Item $standaloneExe -Destination "src-tauri/target/release/moyu-reader-portable.exe"
             Write-Host "Created portable exe: moyu-reader-portable.exe"
             
-            # 如果存在 GitHub Release，将绿色单文件直接上传至对应 Release
-            $tag = "v1.0.0"
+            # 获取当前 tag 或者 fallback 到 v1.0.0
+            $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v1.0.0" }
             if ($env:GITHUB_TOKEN) {
-              try {
-                gh release upload $tag "src-tauri/target/release/moyu-reader-portable.exe" --clobber
-                Write-Host "Uploaded portable exe to GitHub Release $tag"
-              } catch {
-                Write-Warning "Could not upload via gh cli: $_"
+              # 添加 3 次网络握手重试，应对 GitHub API 偶发 TLS timeout
+              $success = $false
+              for ($i = 1; $i -le 3; $i++) {
+                try {
+                  Write-Host "Attempting gh release upload (attempt $i/3)..."
+                  gh release upload $tag "src-tauri/target/release/moyu-reader-portable.exe" --clobber
+                  $success = $true
+                  Write-Host "Successfully uploaded portable exe to GitHub Release $tag"
+                  break
+                } catch {
+                  Write-Warning "Attempt $i failed: $_. Waiting 5s before retry..."
+                  Start-Sleep -Seconds 5
+                }
+              }
+              if (-not $success) {
+                Write-Warning "Could not upload via gh cli after 3 attempts, artifact upload step will still preserve the binary."
               }
             }
           } else {
@@ -85,6 +97,7 @@ jobs:
           }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
 
       - name: Upload Windows exe and msi Artifacts
         if: always()
