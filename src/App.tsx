@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { DocumentItem, ReaderSettings } from './types';
 import {
   getAllDocuments,
@@ -15,6 +15,7 @@ import { ReaderView } from './components/ReaderView';
 import { MinimizedWidget } from './components/MinimizedWidget';
 import { SettingsModal } from './components/SettingsModal';
 import { useWindowDrag } from './utils/useWindowDrag';
+import { desktop } from './utils/desktop';
 
 export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -30,24 +31,78 @@ export default function App() {
   // 全局支持长按/按住鼠标左键拖动窗口
   useWindowDrag(isMaximized);
 
-  // 记录调整过的窗口长宽到本地存储（Web 模式回退备用）
-  useEffect(() => {
-    const handleResize = () => {
-      try {
-        localStorage.setItem(
-          'desktop_reader_window_size',
-          JSON.stringify({
-            width: window.innerWidth,
-            height: window.innerHeight,
-          })
-        );
-      } catch (e) {
-        // ignore
+  // 分别持久化记忆：首页窗口尺寸 & 阅读器窗口尺寸
+  const isReadingRef = useRef<boolean>(isReading);
+  isReadingRef.current = isReading;
+
+  // 辅助函数：根据模式应用保存的尺寸
+  const applyWindowSizeForMode = useCallback(async (readingMode: boolean) => {
+    try {
+      const storageKey = readingMode
+        ? 'desktop_reader_window_size_reading'
+        : 'desktop_reader_window_size_home';
+      const defaultSize = readingMode
+        ? { width: 520, height: 260 } // 阅读模式默认尺寸：更加小巧便携、贴合屏幕一隅摸鱼
+        : { width: 880, height: 600 }; // 首页默认尺寸：舒适开阔的文档管理面板
+
+      let targetW = defaultSize.width;
+      let targetH = defaultSize.height;
+
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed.width === 'number' && typeof parsed.height === 'number') {
+          targetW = Math.max(260, Math.min(window.screen?.availWidth || 3840, parsed.width));
+          targetH = Math.max(60, Math.min(window.screen?.availHeight || 2160, parsed.height));
+        }
       }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+      if (desktop.isDesktop()) {
+        await desktop.setSize(targetW, targetH);
+      }
+    } catch (e) {
+      console.warn('Failed to apply window size for mode', readingMode, e);
+    }
   }, []);
+
+  // 启动时初始化首页窗口尺寸
+  useEffect(() => {
+    applyWindowSizeForMode(false);
+
+    // 防抖监听窗口手动拉伸并保存到对应模式的 key 中
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const handleResize = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          let w = window.innerWidth;
+          let h = window.innerHeight;
+          if (desktop.isDesktop()) {
+            const tauriSize = await desktop.getSize();
+            if (tauriSize && tauriSize.width > 0 && tauriSize.height > 0) {
+              w = tauriSize.width;
+              h = tauriSize.height;
+            }
+          }
+          if (w > 100 && h > 40) {
+            const currentMode = isReadingRef.current;
+            const storageKey = currentMode
+              ? 'desktop_reader_window_size_reading'
+              : 'desktop_reader_window_size_home';
+            localStorage.setItem(storageKey, JSON.stringify({ width: w, height: h }));
+          }
+        } catch (e) {
+          // ignore
+        }
+      }, 250);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [applyWindowSizeForMode]);
 
   // Initialize documents from IndexedDB or seed
   useEffect(() => {
@@ -95,6 +150,9 @@ export default function App() {
       ...prev.filter((d) => d.id !== doc.id),
     ]);
     await saveDocument(updatedDoc);
+
+    // 切换至阅读模式专属窗口长宽尺寸
+    applyWindowSizeForMode(true);
   };
 
   // Update reading progress
@@ -138,6 +196,8 @@ export default function App() {
   const handleCloseReading = () => {
     setIsReading(false);
     setIsMinimized(false);
+    // 切换回首页专属窗口长宽尺寸
+    applyWindowSizeForMode(false);
   };
 
   // Minimize reading view
@@ -169,10 +229,18 @@ export default function App() {
     return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
   };
 
-  // 当不是最大化状态，且不是透明无边框隐蔽模式时，首页和阅读页始终保持四个角圆角与细腻边框
-  const isTransparentStealth =
-    isReading && settings.bgColor === 'transparent' && !isReaderToolbarVisible;
-  const isRounded = !isMaximized && !isTransparentStealth;
+  // 阅读模式下：
+  // 1. 如果工具栏隐藏（无边框沉浸摸鱼模式），或者背景选择为 transparent（透明模式），一律完全无边框、无圆角、无外层阴影
+  // 2. 只有在常规有色模式且工具栏显式展开时，或者在首页未最大化时，才展示窗口圆角边框
+  const isBorderLessReading = isReading && (!isReaderToolbarVisible || settings.bgColor === 'transparent');
+  const isRounded = !isMaximized && !isBorderLessReading;
+
+  // 动态同步原生窗口阴影控制 (Tauri)
+  useEffect(() => {
+    if (desktop.isDesktop()) {
+      desktop.setShadow(isRounded);
+    }
+  }, [isRounded]);
 
   return (
     <div

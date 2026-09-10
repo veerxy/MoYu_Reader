@@ -23,8 +23,21 @@ fn window_set_always_on_top(window: tauri::Window, flag: bool) -> Result<(), Str
 }
 
 #[tauri::command]
-fn window_set_ignore_cursor_events(window: tauri::Window, ignore: bool) -> Result<(), String> {
-    window.set_ignore_cursor_events(ignore).map_err(|e| e.to_string())
+fn window_set_shadow(window: tauri::Window, enable: bool) -> Result<(), String> {
+    window.set_shadow(enable).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn window_set_size(window: tauri::Window, width: f64, height: f64) -> Result<(), String> {
+    window.set_size(tauri::LogicalSize::new(width, height)).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn window_get_size(window: tauri::Window) -> Result<(f64, f64), String> {
+    let size = window.inner_size().map_err(|e| e.to_string())?;
+    let scale_factor = window.scale_factor().map_err(|e| e.to_string())?;
+    let logical_size = size.to_logical::<f64>(scale_factor);
+    Ok((logical_size.width, logical_size.height))
 }
 
 #[tauri::command]
@@ -45,7 +58,9 @@ pub fn run() {
             window_maximize,
             window_close,
             window_set_always_on_top,
-            window_set_ignore_cursor_events,
+            window_set_shadow,
+            window_set_size,
+            window_get_size,
             window_start_dragging,
             window_is_maximized
         ])

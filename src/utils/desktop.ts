@@ -132,25 +132,72 @@ export const desktop = {
   },
 
   /**
-   * 透明模式鼠标穿透控制
-   * ignore: true 时鼠标点击事件将穿透到下层桌面/软件；false 时保持在当前客户端
+   * 设置原生窗口阴影 (开启或完全关闭)
    */
-  setIgnoreMouseEvents: async (ignore: boolean) => {
+  setShadow: async (enable: boolean) => {
     if (isTauri()) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
-        await invoke('window_set_ignore_cursor_events', { ignore });
+        await invoke('window_set_shadow', { enable });
         return;
       } catch {
         try {
           const { getCurrentWindow } = await import('@tauri-apps/api/window');
-          await getCurrentWindow().setIgnoreCursorEvents(ignore);
+          await getCurrentWindow().setShadow(enable);
           return;
         } catch (e) {
-          console.warn('Tauri setIgnoreCursorEvents error', e);
+          console.warn('Tauri setShadow error', e);
         }
       }
     }
+  },
+
+  /**
+   * 设置原生窗口尺寸 (长宽)
+   */
+  setSize: async (width: number, height: number) => {
+    if (isTauri()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('window_set_size', { width, height });
+        return;
+      } catch {
+        try {
+          const { getCurrentWindow, LogicalSize } = await import('@tauri-apps/api/window');
+          await getCurrentWindow().setSize(new LogicalSize(width, height));
+          return;
+        } catch (e) {
+          console.warn('Tauri setSize error', e);
+        }
+      }
+    }
+  },
+
+  /**
+   * 获取原生窗口尺寸 (长宽)
+   */
+  getSize: async (): Promise<{ width: number; height: number } | null> => {
+    if (isTauri()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = await invoke<[number, number]>('window_get_size');
+        if (res && res.length >= 2) {
+          return { width: Math.round(res[0]), height: Math.round(res[1]) };
+        }
+      } catch {
+        try {
+          const { getCurrentWindow } = await import('@tauri-apps/api/window');
+          const win = getCurrentWindow();
+          const factor = await win.scaleFactor();
+          const size = await win.innerSize();
+          const logical = size.toLogical(factor);
+          return { width: Math.round(logical.width), height: Math.round(logical.height) };
+        } catch (e) {
+          console.warn('Tauri getSize error', e);
+        }
+      }
+    }
+    return null;
   },
 
   /**

@@ -120,28 +120,8 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     }
   };
 
-  // 是否当前处于鼠标穿透状态：仅在透明模式下、开启了鼠标穿透、顶部工具栏隐藏且设置弹窗关闭时允许穿透
-  const isCurrentlyClickThrough =
-    settings.bgColor === 'transparent' &&
-    Boolean(settings.transparentClickThrough) &&
-    !isToolbarVisible &&
-    !isSettingsOpen;
-
-  // 同步透明模式鼠标穿透状态到桌面原生窗口 (Tauri)
-  useEffect(() => {
-    desktop.setIgnoreMouseEvents(isCurrentlyClickThrough);
-
-    return () => {
-      desktop.setIgnoreMouseEvents(false);
-    };
-  }, [isCurrentlyClickThrough]);
-
-  // Requirement 2.1 & 新增穿透需求：
-  // 允许穿透时鼠标事件穿透至下层页面/桌面；不允许时拦截点击，只保持在当前客户端
   const handleReaderClick = (e: React.MouseEvent) => {
-    if (!isCurrentlyClickThrough) {
-      e.stopPropagation();
-    }
+    e.stopPropagation();
   };
 
   return (
@@ -153,7 +133,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
       className="relative w-full h-full flex flex-col transition-all duration-300 select-none overflow-hidden"
       style={{
         ...getBgStyle(),
-        pointerEvents: isCurrentlyClickThrough ? 'none' : 'auto',
+        pointerEvents: 'auto',
       }}
     >
       {/* Top Bar / Toolbar: Requirement 2 & 2.2 */}
@@ -434,7 +414,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
       <main
         id="reader-document-viewport"
         className="flex-1 w-full h-full relative overflow-hidden"
-        style={{ pointerEvents: isCurrentlyClickThrough ? 'none' : 'auto' }}
+        style={{ pointerEvents: 'auto' }}
       >
         {document.type === 'txt' && (
           <TxtReader

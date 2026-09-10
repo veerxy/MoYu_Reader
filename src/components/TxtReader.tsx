@@ -57,7 +57,6 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     }, 150);
   };
 
-  // Prevent click-through when transparent:
   const handleContainerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -71,25 +70,20 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       .filter((p) => p.length > 0);
   }, [content]);
 
-  const isClickThrough =
-    settings.bgColor === 'transparent' &&
-    Boolean(settings.transparentClickThrough) &&
-    !isBorderVisible;
-
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
       onClick={handleContainerClick}
       onMouseDown={(e) => {
-        if (!isClickThrough) e.stopPropagation();
+        e.stopPropagation();
       }}
       id="txt-reader-scroll-container"
       className={`w-full h-full overflow-y-auto px-4 py-2 sm:px-10 sm:py-6 md:px-16 select-text outline-hidden ${
         isBorderVisible ? '' : 'hide-scrollbar'
       }`}
       style={{
-        pointerEvents: isClickThrough ? 'none' : 'auto',
+        pointerEvents: 'auto',
         color: settings.fontColor,
         fontSize: `${settings.fontSize}px`,
         lineHeight: settings.lineHeight,

@@ -151,34 +151,30 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative transition-all duration-200 rounded-xl border border-dashed p-4 flex items-center justify-between gap-4 ${
+        onClick={handleTriggerFileSelect}
+        className={`group relative transition-all duration-200 rounded-2xl border-2 border-dashed p-6 sm:p-7 flex flex-col items-center justify-center text-center cursor-pointer ${
           isDragging
-            ? 'border-blue-500 bg-blue-50/50'
-            : 'border-zinc-300 hover:border-zinc-400 bg-white shadow-2xs'
+            ? 'border-blue-500 bg-blue-50/60 scale-[0.99]'
+            : 'border-zinc-200/90 hover:border-zinc-400/90 bg-white/70 hover:bg-white shadow-2xs hover:shadow-xs'
         }`}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600 shrink-0">
-            <Upload className={`w-4 h-4 ${isDragging ? 'text-blue-600' : 'text-zinc-600'}`} />
-          </div>
-          <div className="text-xs text-zinc-600 truncate">
-            拖拽本地 <span className="font-medium text-zinc-900">TXT</span> 或{' '}
-            <span className="font-medium text-zinc-900">PDF</span> 文档到此处，或点击右侧选择
-          </div>
+        <div className="w-12 h-12 rounded-2xl bg-zinc-100 group-hover:bg-zinc-900 flex items-center justify-center text-zinc-600 group-hover:text-white transition-all duration-200 shadow-xs mb-3">
+          <Upload className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
         </div>
 
-        <button
-          type="button"
-          onClick={handleTriggerFileSelect}
-          className="px-3.5 py-1.5 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors shrink-0 cursor-pointer"
-        >
-          选择本地文件
-        </button>
+        <div className="space-y-1">
+          <div className="text-sm font-semibold text-zinc-900 flex items-center justify-center gap-2">
+            <span>点击浏览 或 拖拽文档到此处</span>
+          </div>
+          <p className="text-xs text-zinc-400 font-normal">
+            自动识别编码，流畅解析 <span className="font-medium text-zinc-700">TXT 小说</span> 与 <span className="font-medium text-zinc-700">PDF 文档</span>
+          </p>
+        </div>
 
         {isProcessing && (
-          <div className="absolute inset-0 bg-white/95 backdrop-blur-xs rounded-xl flex items-center justify-center gap-2 text-xs text-zinc-700 font-medium">
-            <div className="w-3.5 h-3.5 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
-            <span>正在解析并加载文档内容...</span>
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-xs rounded-2xl flex items-center justify-center gap-2.5 text-xs text-zinc-800 font-medium z-10">
+            <div className="w-4 h-4 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+            <span>正在解析并载入文档...</span>
           </div>
         )}
       </div>
@@ -186,9 +182,9 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
       {errorMessage && (
         <div
           id="import-error-banner"
-          className="mt-2 flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs animate-fadeIn"
+          className="mt-2.5 flex items-center gap-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs animate-fadeIn"
         >
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -196,9 +192,9 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
       {successMessage && (
         <div
           id="import-success-banner"
-          className="mt-2 flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs animate-fadeIn"
+          className="mt-2.5 flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs animate-fadeIn"
         >
-          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}
