@@ -247,7 +247,7 @@ export default function App() {
   return (
     <div
       id="desktop-app-container"
-      className={`w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none transition-all duration-200 box-border ${getContainerBgClass()} ${
+      className={`w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border ${getContainerBgClass()} ${
         isRounded ? 'rounded-2xl' : 'rounded-none'
       } ${
         showBorder

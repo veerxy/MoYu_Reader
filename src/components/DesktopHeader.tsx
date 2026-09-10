@@ -63,7 +63,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
         <img
           src="/app_icon.jpg"
           alt="App Icon"
-          className="w-4 h-4 rounded-sm object-cover shadow-2xs"
+          className="w-4 h-4 rounded-[4px] object-cover ring-1 ring-black/10 shadow-xs"
           onError={(e) => {
             // fallback if image fails to load
             (e.target as HTMLElement).style.display = 'none';
