@@ -234,26 +234,25 @@ export default function App() {
   // 2. 当用户按 Tab 显隐工具栏与边框时，必须四周四个方向均呈现统一精致的圆角边框与微妙阴影，而不是只有上方出现。
   // 3. 当处于最大化模式时贴合屏幕，不展示圆角；非最大化时不论背景模式均具备现代圆角。
   // 4. Tab 切换时：当 isReaderToolbarVisible 为 true 时，四周完整呈现精致的现代圆角边框；当隐藏时（极简摸鱼）完全无边框。
-  //
-  // 性能与视觉说明：
-  // - 边框/阴影显隐全部走纯 CSS 过渡（transition），不再调用原生 window.setShadow。
-  //   原生阴影切换需要 IPC + DWM 窗口样式变更，会触发整窗重绘导致 Tab 显隐明显卡顿，
-  //   且 Windows 原生阴影沿矩形窗口绘制，会在圆角外露出方形直角。
-  // - 外层容器预留 12px 透明"呼吸区"，让 CSS box-shadow 有绘制空间且天然跟随圆角。
-  // - 边框常驻 1px（隐藏时透明），避免显隐时 1px 布局跳动。
   const showBorder = !isMaximized && (!isReading || isReaderToolbarVisible);
   const isRounded = !isMaximized;
 
+  // 动态同步原生窗口阴影控制 (Tauri)
+  useEffect(() => {
+    if (desktop.isDesktop()) {
+      desktop.setShadow(showBorder);
+    }
+  }, [showBorder]);
+
   return (
-    <div className={`w-full h-full box-border ${isMaximized ? 'p-0' : 'p-3'}`}>
     <div
       id="desktop-app-container"
-      className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border transition-all duration-200 ease-out ${getContainerBgClass()} ${
+      className={`w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border ${getContainerBgClass()} ${
         isRounded ? 'rounded-2xl' : 'rounded-none'
-      } border ${
+      } ${
         showBorder
-          ? 'border-zinc-300/80 dark:border-zinc-700/80 shadow-[0_4px_14px_rgba(0,0,0,0.16)]'
-          : 'border-transparent shadow-none'
+          ? 'border border-zinc-300/80 dark:border-zinc-700/80 shadow-2xl ring-1 ring-black/5'
+          : 'border-0 shadow-none ring-0'
       }`}
     >
       {/* Windows Standard Titlebar (shown in home view) */}
@@ -312,7 +311,6 @@ export default function App() {
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
       />
-    </div>
     </div>
   );
 }

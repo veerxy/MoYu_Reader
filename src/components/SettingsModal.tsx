@@ -55,7 +55,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     <div
       id="settings-modal-backdrop"
       onClick={onClose}
-      className="absolute inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 md:p-8 animate-fadeIn overflow-hidden"
+      className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 md:p-8 animate-fadeIn overflow-hidden"
     >
       <div
         id="settings-modal-dialog"

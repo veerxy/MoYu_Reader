@@ -132,6 +132,27 @@ export const desktop = {
   },
 
   /**
+   * 设置原生窗口阴影 (开启或完全关闭)
+   */
+  setShadow: async (enable: boolean) => {
+    if (isTauri()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('window_set_shadow', { enable });
+        return;
+      } catch {
+        try {
+          const { getCurrentWindow } = await import('@tauri-apps/api/window');
+          await getCurrentWindow().setShadow(enable);
+          return;
+        } catch (e) {
+          console.warn('Tauri setShadow error', e);
+        }
+      }
+    }
+  },
+
+  /**
    * 设置原生窗口尺寸 (长宽)
    */
   setSize: async (width: number, height: number) => {
