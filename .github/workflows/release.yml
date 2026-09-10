@@ -55,7 +55,7 @@ jobs:
             极简隐蔽桌面文档阅读器 (Tauri v2 原生桌面端)
             
             - **绿色便携版**：`moyu-reader-portable.exe`（单文件双击即开，免安装）
-            - **Windows 安装包**：`moyu-reader_1.0.0_x64-setup.exe` / `.msi`
+            - **Windows 安装包**：`moyu-reader_1.0.1_x64-setup.exe` / `.msi`
           releaseDraft: false
           prerelease: false
 
@@ -71,8 +71,8 @@ jobs:
             Copy-Item $standaloneExe -Destination "src-tauri/target/release/moyu-reader-portable.exe"
             Write-Host "Created portable exe: moyu-reader-portable.exe"
             
-            # 获取当前 tag 或者 fallback 到 v1.0.0
-            $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v1.0.0" }
+            # 获取当前 tag 或者 fallback 到 v1.0.1
+            $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v1.0.1" }
             if ($env:GITHUB_TOKEN) {
               # 添加 3 次网络握手重试，应对 GitHub API 偶发 TLS timeout
               $success = $false

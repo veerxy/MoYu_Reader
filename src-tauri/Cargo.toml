@@ -1,6 +1,6 @@
 [package]
 name = "moyu-reader"
-version = "1.0.0"
+version = "1.0.1"
 description = "极简隐蔽桌面文档阅读器 (Tauri 版)"
 authors = ["moyu"]
 edition = "2021"

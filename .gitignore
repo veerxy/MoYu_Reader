@@ -5,6 +5,8 @@ target/
 src-tauri/target/
 coverage/
 .DS_Store
+.idea/
 *.log
 .env*
 !.env.example
+.npm-cache-local/

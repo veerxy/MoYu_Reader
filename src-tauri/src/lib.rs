@@ -23,11 +23,6 @@ fn window_set_always_on_top(window: tauri::Window, flag: bool) -> Result<(), Str
 }
 
 #[tauri::command]
-fn window_set_shadow(window: tauri::Window, enable: bool) -> Result<(), String> {
-    window.set_shadow(enable).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
 fn window_set_size(window: tauri::Window, width: f64, height: f64) -> Result<(), String> {
     window.set_size(tauri::LogicalSize::new(width, height)).map_err(|e| e.to_string())
 }
@@ -58,7 +53,6 @@ pub fn run() {
             window_maximize,
             window_close,
             window_set_always_on_top,
-            window_set_shadow,
             window_set_size,
             window_get_size,
             window_start_dragging,

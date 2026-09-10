@@ -61,7 +61,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
         style={{ WebkitAppRegion: 'no-drag' } as any}
       >
         <img
-          src="/app_icon.jpg"
+          src="/app_icon.png"
           alt="App Icon"
           className="w-4 h-4 rounded-[4px] object-cover ring-1 ring-black/10 shadow-xs"
           onError={(e) => {
