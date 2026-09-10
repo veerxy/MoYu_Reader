@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "moyu-reader",
+  "productName": "极简文档阅读器",
   "version": "1.0.0",
   "identifier": "com.moyu.reader",
   "build": {

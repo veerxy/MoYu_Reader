@@ -54,27 +54,8 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
   return (
     <div
       id="recent-files-page"
-      className="p-6 md:p-10 max-w-3xl mx-auto w-full space-y-7 flex flex-col justify-center min-h-full"
+      className="p-6 md:p-8 max-w-3xl mx-auto w-full space-y-6 flex flex-col justify-center min-h-full"
     >
-      {/* 顶部标题与极简桌面应用标识 */}
-      <div className="flex items-center justify-between pb-1 border-b border-zinc-200/60">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-zinc-900 text-white flex items-center justify-center shadow-xs">
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-zinc-900 tracking-tight">文档工作台</h1>
-            <p className="text-[11px] text-zinc-400">极简离线阅读 • 专注隐蔽摸鱼</p>
-          </div>
-        </div>
-
-        <div className="text-right">
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 border border-zinc-200/60">
-            {documents.length} 篇本地书库
-          </span>
-        </div>
-      </div>
-
       {/* 1. 主题区域一：导入文档区域 (强化桌面质感，可直接拖入或点击) */}
       <section id="importer-section" className="space-y-2">
         <div className="flex items-center justify-between px-1">

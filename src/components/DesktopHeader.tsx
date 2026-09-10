@@ -60,9 +60,15 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
         className="flex items-center gap-2 pl-3 pointer-events-none"
         style={{ WebkitAppRegion: 'no-drag' } as any}
       >
-        <div className="w-4 h-4 rounded-xs bg-blue-600 flex items-center justify-center text-white shadow-2xs">
-          <BookOpen className="w-2.5 h-2.5" />
-        </div>
+        <img
+          src="/app_icon.jpg"
+          alt="App Icon"
+          className="w-4 h-4 rounded-sm object-cover shadow-2xs"
+          onError={(e) => {
+            // fallback if image fails to load
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
         <span className="font-medium text-xs text-zinc-800 dark:text-zinc-200 tracking-tight">
           {title}
         </span>

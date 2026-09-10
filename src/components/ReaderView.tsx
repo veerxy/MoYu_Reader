@@ -144,7 +144,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           onMouseDown={onStartDrag}
           onDoubleClick={onToggleMaximize}
           style={{ WebkitAppRegion: 'drag' } as any}
-          className="shrink-0 h-10 flex items-center justify-between px-3 z-30 transition-all border-b border-zinc-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md cursor-move select-none text-xs"
+          className="shrink-0 h-10 flex items-center justify-between px-3 z-30 transition-all border-b border-zinc-200/60 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md cursor-move select-none text-xs"
         >
           {/* Left: Back button, Document Info & Progress */}
           <div

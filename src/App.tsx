@@ -229,26 +229,30 @@ export default function App() {
     return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
   };
 
-  // 阅读模式下：
-  // 1. 如果工具栏隐藏（无边框沉浸摸鱼模式），或者背景选择为 transparent（透明模式），一律完全无边框、无圆角、无外层阴影
-  // 2. 只有在常规有色模式且工具栏显式展开时，或者在首页未最大化时，才展示窗口圆角边框
-  const isBorderLessReading = isReading && (!isReaderToolbarVisible || settings.bgColor === 'transparent');
-  const isRounded = !isMaximized && !isBorderLessReading;
+  // 阅读模式与首页的圆角和边框逻辑：
+  // 1. 阅读界面要求圆角和现代化设计。
+  // 2. 当用户按 Tab 显隐工具栏与边框时，必须四周四个方向均呈现统一精致的圆角边框与微妙阴影，而不是只有上方出现。
+  // 3. 当处于最大化模式时贴合屏幕，不展示圆角；非最大化时不论背景模式均具备现代圆角。
+  // 4. Tab 切换时：当 isReaderToolbarVisible 为 true 时，四周完整呈现精致的现代圆角边框；当隐藏时（极简摸鱼）完全无边框。
+  const showBorder = !isMaximized && (!isReading || isReaderToolbarVisible);
+  const isRounded = !isMaximized;
 
   // 动态同步原生窗口阴影控制 (Tauri)
   useEffect(() => {
     if (desktop.isDesktop()) {
-      desktop.setShadow(isRounded);
+      desktop.setShadow(showBorder);
     }
-  }, [isRounded]);
+  }, [showBorder]);
 
   return (
     <div
       id="desktop-app-container"
-      className={`w-full h-screen max-h-screen overflow-hidden flex flex-col font-sans select-none transition-colors duration-150 ${getContainerBgClass()} ${
-        isRounded
-          ? 'rounded-xl border border-zinc-300/80 dark:border-zinc-700/80 shadow-2xl'
-          : 'rounded-none border-0 shadow-none'
+      className={`w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none transition-all duration-200 box-border ${getContainerBgClass()} ${
+        isRounded ? 'rounded-2xl' : 'rounded-none'
+      } ${
+        showBorder
+          ? 'border border-zinc-300/80 dark:border-zinc-700/80 shadow-2xl ring-1 ring-black/5'
+          : 'border-0 shadow-none ring-0'
       }`}
     >
       {/* Windows Standard Titlebar (shown in home view) */}
