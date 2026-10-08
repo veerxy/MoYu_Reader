@@ -22,17 +22,22 @@
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": false,
-        "shadow": false
+        "shadow": false,
+        "dragDropEnabled": false
       }
     ],
     "security": {
       "csp": null,
-      "capabilities": ["default"]
+      "capabilities": [
+        "default"
+      ]
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

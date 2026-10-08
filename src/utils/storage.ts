@@ -1,4 +1,5 @@
 import { DocumentItem, ReaderSettings } from '../types';
+import { DEFAULT_TOC_WIDTH } from './outline';
 
 const DB_NAME = 'DesktopDocReaderDB';
 const DB_VERSION = 1;
@@ -16,6 +17,8 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   bgColor: 'transparent', // Reading mode default transparent
   fontFamily: 'system-ui, -apple-system, sans-serif',
   textAlign: 'left',
+  showTableOfContents: false, // 默认关闭，保持老用户原有极简阅读体验
+  tocWidth: DEFAULT_TOC_WIDTH,
 };
 
 function openDB(): Promise<IDBDatabase> {

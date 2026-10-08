@@ -1,3 +1,7 @@
+import type { OutlineItem } from './utils/outline';
+
+export type { OutlineItem };
+
 export type DocumentType = 'txt' | 'pdf';
 
 export type BackgroundColorType = 'transparent' | 'dark' | 'white' | 'book' | string;
@@ -26,6 +30,10 @@ export interface ReaderSettings {
   bgColor: BackgroundColorType; // 'transparent' | 'dark' | 'white' | 'book'
   fontFamily: string;
   textAlign: 'left' | 'justify';
+  // 目录是全局阅读偏好；关闭时不改变原有极简单栏阅读布局。
+  showTableOfContents: boolean;
+  // 记录用户拖动后的目录宽度，避免每次进入阅读页都重置。
+  tocWidth: number;
 }
 
 export interface WindowState {

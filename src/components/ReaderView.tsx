@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Settings,
   Minus,
@@ -10,11 +10,13 @@ import {
   Keyboard,
   Sparkles,
 } from 'lucide-react';
-import { DocumentItem, ReaderSettings } from '../types';
+import { DocumentItem, OutlineItem, ReaderSettings } from '../types';
 import { TxtReader } from './TxtReader';
 import { PdfReader } from './PdfReader';
+import { OutlinePanel } from './OutlinePanel';
 import { SettingsModal } from './SettingsModal';
 import { desktop } from '../utils/desktop';
+import { clampTocWidth, extractTxtOutline } from '../utils/outline';
 
 interface ReaderViewProps {
   document: DocumentItem;
@@ -43,6 +45,89 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   const [isToolbarVisible, setIsToolbarVisible] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [showTabTip, setShowTabTip] = useState<boolean>(true);
+  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
+  const [outlineTargetParagraphIndex, setOutlineTargetParagraphIndex] = useState<number | undefined>();
+  const [outlineTargetPage, setOutlineTargetPage] = useState<number | undefined>();
+  const [tocWidth, setTocWidth] = useState(() => clampTocWidth(settings.tocWidth));
+  const [isResizingToc, setIsResizingToc] = useState(false);
+  const [tocResizeStart, setTocResizeStart] = useState<{
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  // TXT 目录在渲染层提取，保证正文标题判断和目录定位使用同一套段落序号。
+  const txtOutlineItems = useMemo(
+    () => (document.type === 'txt' ? extractTxtOutline(document.content || '') : []),
+    [document.type, document.content],
+  );
+
+  // 切换文档时清空跳转目标，避免上一个文档的目标章节影响新文档。
+  useEffect(() => {
+    setOutlineItems(document.type === 'txt' ? txtOutlineItems : []);
+    setOutlineTargetParagraphIndex(undefined);
+    setOutlineTargetPage(undefined);
+  }, [document.id, document.type, txtOutlineItems]);
+
+  // 拖动过程中使用本地宽度，只在结束时持久化，避免高频写 localStorage。
+  useEffect(() => {
+    if (!isResizingToc) {
+      setTocWidth(clampTocWidth(settings.tocWidth));
+    }
+  }, [settings.tocWidth, isResizingToc]);
+
+  useEffect(() => {
+    if (!tocResizeStart) return;
+
+    const handleMove = (event: PointerEvent) => {
+      const nextWidth = clampTocWidth(
+        tocResizeStart.startWidth + event.clientX - tocResizeStart.startX,
+      );
+      setTocWidth(nextWidth);
+    };
+
+    const handleEnd = (event: PointerEvent) => {
+      const nextWidth = clampTocWidth(
+        tocResizeStart.startWidth + event.clientX - tocResizeStart.startX,
+      );
+      setTocWidth(nextWidth);
+      setIsResizingToc(false);
+      setTocResizeStart(null);
+      onUpdateSettings({ ...settingsRef.current, tocWidth: nextWidth });
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleEnd);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleEnd);
+    };
+  }, [tocResizeStart, onUpdateSettings]);
+
+  const handleTocResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    // 捕获指针可保证拖出分隔条后仍持续收到移动事件，避免拖动中断。
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsResizingToc(true);
+    setTocResizeStart({ startX: event.clientX, startWidth: tocWidth });
+  };
+
+  const handlePdfOutlineChange = useCallback((items: OutlineItem[]) => {
+    setOutlineItems(items);
+  }, []);
+
+  const handleOutlineNavigate = useCallback((item: OutlineItem) => {
+    if (item.paragraphIndex !== undefined) {
+      setOutlineTargetParagraphIndex(item.paragraphIndex);
+    } else if (item.page !== undefined) {
+      setOutlineTargetPage(item.page);
+    }
+  }, []);
 
   // Notify parent of border visibility so window resize grip indicator syncs
   useEffect(() => {
@@ -413,33 +498,66 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
       {/* Main Document Content Area */}
       <main
         id="reader-document-viewport"
-        className="flex-1 w-full h-full relative overflow-hidden"
+        className="flex-1 w-full h-full relative overflow-hidden flex"
         style={{ pointerEvents: 'auto' }}
       >
-        {document.type === 'txt' && (
-          <TxtReader
-            content={document.content || ''}
-            settings={settings}
-            isBorderVisible={isToolbarVisible}
-            initialScrollPercent={document.scrollPercent || document.progress || 0}
-            initialScrollTop={document.scrollTop}
-            onProgressChange={(percent, scrollTop) => {
-              onProgressUpdate(percent, { scrollTop, scrollPercent: percent });
-            }}
-          />
+        {settings.showTableOfContents && (
+          <>
+            <OutlinePanel
+              items={outlineItems}
+              width={tocWidth}
+              isDarkBackground={settings.bgColor === 'dark'}
+              onNavigate={handleOutlineNavigate}
+            />
+
+            <div
+              id="reader-outline-resizer"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="调节目录宽度"
+              onPointerDown={handleTocResizeStart}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className={`w-1.5 shrink-0 cursor-col-resize transition-colors ${
+                isResizingToc
+                  ? 'bg-blue-500/70'
+                  : settings.bgColor === 'dark'
+                    ? 'bg-white/10 hover:bg-white/30'
+                    : 'bg-zinc-900/10 hover:bg-blue-500/50'
+              }`}
+            />
+          </>
         )}
 
-        {document.type === 'pdf' && (
-          <PdfReader
-            data={document.pdfArrayBuffer || document.pdfDataUrl || ''}
-            settings={settings}
-            isBorderVisible={isToolbarVisible}
-            initialPage={document.currentPage || 1}
-            onProgressChange={(percent, page, totalPages) => {
-              onProgressUpdate(percent, { currentPage: page, totalPages });
-            }}
-          />
-        )}
+        <div className="flex-1 min-w-0 h-full relative">
+          {document.type === 'txt' && (
+            <TxtReader
+              content={document.content || ''}
+              settings={settings}
+              isBorderVisible={isToolbarVisible}
+              initialScrollPercent={document.scrollPercent || document.progress || 0}
+              initialScrollTop={document.scrollTop}
+              outlineTargetParagraphIndex={outlineTargetParagraphIndex}
+              onProgressChange={(percent, scrollTop) => {
+                onProgressUpdate(percent, { scrollTop, scrollPercent: percent });
+              }}
+            />
+          )}
+
+          {document.type === 'pdf' && (
+            <PdfReader
+              data={document.pdfArrayBuffer || document.pdfDataUrl || ''}
+              settings={settings}
+              isBorderVisible={isToolbarVisible}
+              initialPage={document.currentPage || 1}
+              onOutlineChange={handlePdfOutlineChange}
+              outlineTargetPage={outlineTargetPage}
+              onProgressChange={(percent, page, totalPages) => {
+                onProgressUpdate(percent, { currentPage: page, totalPages });
+              }}
+            />
+          )}
+        </div>
       </main>
 
       {/* Settings Modal */}

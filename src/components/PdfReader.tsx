@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { ReaderSettings } from '../types';
+import { OutlineItem, ReaderSettings } from '../types';
+import { PdfOutlineInput, createPageOutline, flattenPdfOutline } from '../utils/outline';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -22,11 +23,35 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// 优先读取 PDF 自带书签；没有书签时使用页码目录兜底，保证目录入口始终有内容。
+async function getPdfOutlineItems(
+  pdfDoc: pdfjsLib.PDFDocumentProxy,
+): Promise<OutlineItem[]> {
+  const rawOutline = ((await pdfDoc.getOutline()) || []) as PdfOutlineInput[];
+
+  const items = await flattenPdfOutline(rawOutline, async (dest) => {
+    try {
+      const target = typeof dest === 'string' ? await pdfDoc.getDestination(dest) : dest;
+      const pageRef = Array.isArray(target) ? target[0] : target;
+      if (!pageRef || typeof pageRef !== 'object') return null;
+
+      const pageIndex = await pdfDoc.getPageIndex(pageRef);
+      return pageIndex + 1;
+    } catch {
+      return null;
+    }
+  });
+
+  return items.length > 0 ? items : createPageOutline(pdfDoc.numPages);
+}
+
 interface PdfReaderProps {
   data: ArrayBuffer | string; // ArrayBuffer or base64
   settings: ReaderSettings;
   initialPage?: number;
   isBorderVisible?: boolean;
+  onOutlineChange?: (items: OutlineItem[]) => void;
+  outlineTargetPage?: number;
   onProgressChange: (progressPercent: number, page: number, totalPages: number) => void;
 }
 
@@ -35,6 +60,8 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   settings,
   initialPage = 1,
   isBorderVisible = false,
+  onOutlineChange,
+  outlineTargetPage,
   onProgressChange,
 }) => {
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -47,6 +74,26 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const renderTaskRef = useRef<any>(null);
+
+  // PDF 加载完成后提取目录。读取失败时使用页码目录，避免目录区域空白。
+  useEffect(() => {
+    if (!pdfDoc || !onOutlineChange) return;
+
+    let isCancelled = false;
+    (async () => {
+      try {
+        const items = await getPdfOutlineItems(pdfDoc);
+        if (!isCancelled) onOutlineChange(items);
+      } catch (err) {
+        console.warn('PDF outline loading error', err);
+        if (!isCancelled) onOutlineChange(createPageOutline(pdfDoc.numPages));
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [pdfDoc, onOutlineChange]);
 
   // Load PDF document
   useEffect(() => {
@@ -157,6 +204,13 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
       onProgressChange(percent, clamped, totalPages);
     }
   };
+
+  // 目录点击只传入目标页，复用现有分页逻辑可同步渲染与进度保存。
+  useEffect(() => {
+    if (outlineTargetPage !== undefined) {
+      goToPage(outlineTargetPage);
+    }
+  }, [outlineTargetPage]);
 
   const handlePrevPage = () => goToPage(currentPage - 1);
   const handleNextPage = () => goToPage(currentPage + 1);

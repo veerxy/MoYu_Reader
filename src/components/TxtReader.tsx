@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
+import { TxtParagraph, isTxtChapterTitle, parseTxtParagraphs } from '../utils/outline';
 
 interface TxtReaderProps {
   content: string;
@@ -7,6 +8,7 @@ interface TxtReaderProps {
   initialScrollPercent?: number;
   initialScrollTop?: number;
   isBorderVisible?: boolean;
+  outlineTargetParagraphIndex?: number;
   onProgressChange: (progressPercent: number, scrollTop: number) => void;
 }
 
@@ -16,11 +18,17 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   initialScrollPercent = 0,
   initialScrollTop,
   isBorderVisible = false,
+  outlineTargetParagraphIndex,
   onProgressChange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hasScrolledInitial, setHasScrolledInitial] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onProgressChangeRef = useRef(onProgressChange);
+
+  useEffect(() => {
+    onProgressChangeRef.current = onProgressChange;
+  }, [onProgressChange]);
 
   // Restore initial scroll position once content is mounted
   useEffect(() => {
@@ -39,6 +47,9 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     return () => clearTimeout(timer);
   }, [initialScrollPercent, initialScrollTop, hasScrolledInitial]);
 
+  // 目录跳转和正文渲染共用 parseTxtParagraphs，保证索引不会因空行处理不同而错位。
+  const paragraphs = useMemo<TxtParagraph[]>(() => parseTxtParagraphs(content), [content]);
+
   // Handle scroll events and throttle progress updates
   const handleScroll = () => {
     const el = containerRef.current;
@@ -53,22 +64,38 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     }
 
     scrollTimeoutRef.current = setTimeout(() => {
-      onProgressChange(percent, scrollTop);
+      onProgressChangeRef.current(percent, scrollTop);
     }, 150);
   };
+
+  // 点击目录后按段落序号定位；使用容器相对坐标，避免窗口位置变化影响跳转精度。
+  useEffect(() => {
+    if (outlineTargetParagraphIndex === undefined) return;
+
+    const container = containerRef.current;
+    const target = container?.querySelector<HTMLElement>(
+      `[data-toc-index="${outlineTargetParagraphIndex}"]`,
+    );
+    if (!container || !target) return;
+
+    const targetTop =
+      target.getBoundingClientRect().top -
+      container.getBoundingClientRect().top +
+      container.scrollTop -
+      16;
+    container.scrollTop = Math.max(0, targetTop);
+
+    const maxScroll = Math.max(1, container.scrollHeight - container.clientHeight);
+    const percent = Math.min(
+      100,
+      Math.max(0, Math.round((container.scrollTop / maxScroll) * 100)),
+    );
+    onProgressChangeRef.current(percent, container.scrollTop);
+  }, [outlineTargetParagraphIndex]);
 
   const handleContainerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
-
-  // Split content into clean paragraphs
-  const paragraphs = React.useMemo(() => {
-    if (!content) return [];
-    return content
-      .split(/\r?\n/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0);
-  }, [content]);
 
   return (
     <div
@@ -91,15 +118,13 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     >
       <div className="max-w-3xl mx-auto space-y-4">
         {paragraphs.length > 0 ? (
-          paragraphs.map((p, idx) => {
-            const isChapterTitle =
-              /^第[一二三四五六七八九十百0-9]+[章节卷回篇部]/.test(p) ||
-              /^Chapter\s+\d+/i.test(p) ||
-              (p.length < 30 && p.includes('章'));
+          paragraphs.map((paragraph) => {
+            const isChapterTitle = isTxtChapterTitle(paragraph.text);
 
             return (
               <p
-                key={idx}
+                key={paragraph.index}
+                data-toc-index={paragraph.index}
                 className={`${
                   isChapterTitle
                     ? 'font-bold text-lg pt-6 pb-2 text-center opacity-95 tracking-wide'
@@ -109,7 +134,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
                   textIndent: isChapterTitle ? '0' : '2em',
                 }}
               >
-                {p}
+                {paragraph.text}
               </p>
             );
           })
