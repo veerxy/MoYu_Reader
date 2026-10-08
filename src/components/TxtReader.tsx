@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
-import { TxtParagraph, isTxtChapterTitle, parseTxtParagraphs } from '../utils/outline';
+import { TxtParagraph, parseTxtParagraphs } from '../utils/outline';
+import { extractTxtHeadings } from '../utils/txtHeading';
 import {
   calculateTxtScrollProgress,
   createTxtProgressTracker,
@@ -79,6 +80,12 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   // 目录跳转和正文渲染共用 parseTxtParagraphs，保证索引不会因空行处理不同而错位。
   const paragraphs = useMemo<TxtParagraph[]>(() => parseTxtParagraphs(content), [content]);
 
+  // 标题样式也必须使用“全文过滤后”的结果；否则孤立编号目录会出现目录有项、正文不高亮的不一致。
+  const chapterTitleIndexes = useMemo(
+    () => new Set(extractTxtHeadings(content).map((heading) => heading.paragraphIndex)),
+    [content],
+  );
+
   // 滚动进度节流提交，减少 IndexedDB 高频写入。
   const handleScroll = () => {
     const el = containerRef.current;
@@ -151,7 +158,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       <div className="max-w-3xl mx-auto space-y-4">
         {paragraphs.length > 0 ? (
           paragraphs.map((paragraph) => {
-            const isChapterTitle = isTxtChapterTitle(paragraph.text);
+            const isChapterTitle = chapterTitleIndexes.has(paragraph.index);
 
             return (
               <p

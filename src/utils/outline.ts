@@ -1,3 +1,7 @@
+import { extractTxtHeadings } from './txtHeading';
+
+export { isTxtChapterTitle, normalizeTxtChapterTitle } from './txtHeading';
+
 export interface OutlineItem {
   id: string;
   title: string;
@@ -7,6 +11,7 @@ export interface OutlineItem {
   /** PDF 目录目标：1 基页码，便于直接复用现有分页跳转逻辑 */
   page?: number;
 }
+
 
 export interface TxtParagraph {
   text: string;
@@ -24,12 +29,6 @@ export const MIN_TOC_WIDTH = 180;
 export const MAX_TOC_WIDTH = 480;
 export const DEFAULT_TOC_WIDTH = 260;
 
-// 目录标题需要“独立成行且较短”，避免把正文中包含“章”的句子误判为章节。
-const TXT_TITLE_PATTERN =
-  /^(?:第\s*[0-9一二三四五六七八九十百千万零〇两]+\s*[章节卷回篇部]\s*.*|Chapter\s+\d+\b.*|序章|楔子|尾声|后记|番外(?:\s*.*)?)$/i;
-
-// 部分小说使用 ===第二十七章 标题=== 作为章节分隔，目录中只保留实际标题。
-const TXT_WRAPPED_TITLE_PATTERN = /^[=＝]{2,}\s*(.*?)\s*[=＝]{2,}$/;
 
 export function parseTxtParagraphs(content: string): TxtParagraph[] {
   if (!content) return [];
@@ -41,25 +40,14 @@ export function parseTxtParagraphs(content: string): TxtParagraph[] {
     .map((text, index) => ({ text, index }));
 }
 
-export function normalizeTxtChapterTitle(text: string): string {
-  const wrapped = TXT_WRAPPED_TITLE_PATTERN.exec(text);
-  return wrapped ? wrapped[1] : text;
-}
-
-export function isTxtChapterTitle(text: string): boolean {
-  const title = normalizeTxtChapterTitle(text);
-  return title.length <= 80 && TXT_TITLE_PATTERN.test(title);
-}
-
 export function extractTxtOutline(content: string): OutlineItem[] {
-  return parseTxtParagraphs(content)
-    .filter((paragraph) => isTxtChapterTitle(paragraph.text))
-    .map((paragraph, outlineIndex) => ({
-      id: `txt-outline-${outlineIndex}`,
-      title: normalizeTxtChapterTitle(paragraph.text),
-      level: 0,
-      paragraphIndex: paragraph.index,
-    }));
+  // TXT 标题识别依赖全文上下文（例如连续编号、目录页去重），因此统一交给专用解析器处理。
+  return extractTxtHeadings(content).map((heading, outlineIndex) => ({
+    id: `txt-outline-${outlineIndex}`,
+    title: heading.title,
+    level: heading.level,
+    paragraphIndex: heading.paragraphIndex,
+  }));
 }
 
 export async function flattenPdfOutline(

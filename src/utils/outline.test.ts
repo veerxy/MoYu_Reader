@@ -50,6 +50,10 @@ test('TXT 目录提取支持中文章节、英文 Chapter 和特殊章节', () =
     items.map((item) => item.paragraphIndex),
     [0, 2, 4, 6],
   );
+  assert.deepEqual(
+    items.map((item) => item.level),
+    [1, 1, 2, 1],
+  );
 });
 
 test('PDF 目录扁平化会解析页码、保留层级并跳过外部链接', async () => {
