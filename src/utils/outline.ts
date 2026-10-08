@@ -28,6 +28,9 @@ export const DEFAULT_TOC_WIDTH = 260;
 const TXT_TITLE_PATTERN =
   /^(?:第\s*[0-9一二三四五六七八九十百千万零〇两]+\s*[章节卷回篇部]\s*.*|Chapter\s+\d+\b.*|序章|楔子|尾声|后记|番外(?:\s*.*)?)$/i;
 
+// 部分小说使用 ===第二十七章 标题=== 作为章节分隔，目录中只保留实际标题。
+const TXT_WRAPPED_TITLE_PATTERN = /^[=＝]{2,}\s*(.*?)\s*[=＝]{2,}$/;
+
 export function parseTxtParagraphs(content: string): TxtParagraph[] {
   if (!content) return [];
 
@@ -38,8 +41,14 @@ export function parseTxtParagraphs(content: string): TxtParagraph[] {
     .map((text, index) => ({ text, index }));
 }
 
+export function normalizeTxtChapterTitle(text: string): string {
+  const wrapped = TXT_WRAPPED_TITLE_PATTERN.exec(text);
+  return wrapped ? wrapped[1] : text;
+}
+
 export function isTxtChapterTitle(text: string): boolean {
-  return text.length <= 80 && TXT_TITLE_PATTERN.test(text);
+  const title = normalizeTxtChapterTitle(text);
+  return title.length <= 80 && TXT_TITLE_PATTERN.test(title);
 }
 
 export function extractTxtOutline(content: string): OutlineItem[] {
@@ -47,7 +56,7 @@ export function extractTxtOutline(content: string): OutlineItem[] {
     .filter((paragraph) => isTxtChapterTitle(paragraph.text))
     .map((paragraph, outlineIndex) => ({
       id: `txt-outline-${outlineIndex}`,
-      title: paragraph.text,
+      title: normalizeTxtChapterTitle(paragraph.text),
       level: 0,
       paragraphIndex: paragraph.index,
     }));

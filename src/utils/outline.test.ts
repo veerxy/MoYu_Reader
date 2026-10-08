@@ -90,3 +90,23 @@ test('目录宽度会被限制在允许范围内', () => {
   assert.equal(clampTocWidth(260), 260);
   assert.equal(clampTocWidth(999), 480);
 });
+
+test('TXT 目录识别等号包裹章节并去掉装饰符', () => {
+  const content = [
+    '===第二十七章 发威===',
+    '正文内容',
+    '===第三百零五章 风波再起===',
+    '正文内容',
+  ].join('\n');
+
+  const items = extractTxtOutline(content);
+
+  assert.deepEqual(
+    items.map((item) => item.title),
+    ['第二十七章 发威', '第三百零五章 风波再起'],
+  );
+  assert.deepEqual(
+    items.map((item) => item.paragraphIndex),
+    [0, 2],
+  );
+});

@@ -1,6 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
 import { TxtParagraph, isTxtChapterTitle, parseTxtParagraphs } from '../utils/outline';
+import {
+  calculateTxtScrollProgress,
+  createTxtProgressTracker,
+  TxtProgressTracker,
+} from '../utils/readingProgress';
 
 interface TxtReaderProps {
   content: string;
@@ -25,10 +30,34 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   const [hasScrolledInitial, setHasScrolledInitial] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onProgressChangeRef = useRef(onProgressChange);
+  const progressTrackerRef = useRef<TxtProgressTracker | null>(null);
+
+  if (!progressTrackerRef.current) {
+    progressTrackerRef.current = createTxtProgressTracker();
+  }
 
   useEffect(() => {
     onProgressChangeRef.current = onProgressChange;
   }, [onProgressChange]);
+
+  // 立即提交进度前先记录到 tracker，保证退出阅读页时能补交最后一次位置。
+  const reportProgress = useCallback((progress: number, scrollTop: number) => {
+    progressTrackerRef.current?.update(progress, scrollTop);
+    onProgressChangeRef.current(progress, scrollTop);
+  }, []);
+
+  // 退出阅读页时取消未触发的节流任务，并同步提交最后一次阅读位置。
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+      progressTrackerRef.current?.flush((progress, scrollTop) => {
+        onProgressChangeRef.current(progress, scrollTop);
+      });
+    };
+  }, []);
 
   // Restore initial scroll position once content is mounted
   useEffect(() => {
@@ -50,21 +79,24 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   // 目录跳转和正文渲染共用 parseTxtParagraphs，保证索引不会因空行处理不同而错位。
   const paragraphs = useMemo<TxtParagraph[]>(() => parseTxtParagraphs(content), [content]);
 
-  // Handle scroll events and throttle progress updates
+  // 滚动进度节流提交，减少 IndexedDB 高频写入。
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = el;
-    const maxScroll = Math.max(1, scrollHeight - clientHeight);
-    const percent = Math.min(100, Math.max(0, Math.round((scrollTop / maxScroll) * 100)));
+    const latest = calculateTxtScrollProgress(
+      el.scrollTop,
+      el.scrollHeight,
+      el.clientHeight,
+    );
+    progressTrackerRef.current?.update(latest.progress, latest.scrollTop);
 
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
 
     scrollTimeoutRef.current = setTimeout(() => {
-      onProgressChangeRef.current(percent, scrollTop);
+      onProgressChangeRef.current(latest.progress, latest.scrollTop);
     }, 150);
   };
 
@@ -85,13 +117,13 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       16;
     container.scrollTop = Math.max(0, targetTop);
 
-    const maxScroll = Math.max(1, container.scrollHeight - container.clientHeight);
-    const percent = Math.min(
-      100,
-      Math.max(0, Math.round((container.scrollTop / maxScroll) * 100)),
+    const latest = calculateTxtScrollProgress(
+      container.scrollTop,
+      container.scrollHeight,
+      container.clientHeight,
     );
-    onProgressChangeRef.current(percent, container.scrollTop);
-  }, [outlineTargetParagraphIndex]);
+    reportProgress(latest.progress, latest.scrollTop);
+  }, [outlineTargetParagraphIndex, reportProgress]);
 
   const handleContainerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
