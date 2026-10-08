@@ -53,51 +53,50 @@ jobs:
           releaseName: 'MoYu Reader v__VERSION__'
           releaseBody: |
             极简隐蔽桌面文档阅读器 (Tauri v2 原生桌面端)
-            
+
             - **绿色便携版**：`moyu-reader-portable.exe`（单文件双击即开，免安装）
-            - **Windows 安装包**：`moyu-reader_1.0.1_x64-setup.exe` / `.msi`
+            - **Windows 安装包**：NSIS `.exe` / MSI `.msi`
           releaseDraft: false
           prerelease: false
 
-      - name: Prepare and Release Portable Executable
-        if: always()
+      - name: Update portable executable release asset
+        # 只有 Tauri 构建成功才更新 Release；构建失败时继续上传诊断 artifact。
+        if: success()
         shell: pwsh
-        continue-on-error: true
-        run: |
-          # 查找构建出的单个可执行独立 exe
-          $standaloneExe = "src-tauri/target/release/moyu-reader.exe"
-          if (Test-Path $standaloneExe) {
-            Write-Host "Found standalone executable: $standaloneExe"
-            Copy-Item $standaloneExe -Destination "src-tauri/target/release/moyu-reader-portable.exe"
-            Write-Host "Created portable exe: moyu-reader-portable.exe"
-            
-            # 获取当前 tag 或者 fallback 到 v1.0.1
-            $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v1.0.1" }
-            if ($env:GITHUB_TOKEN) {
-              # 添加 3 次网络握手重试，应对 GitHub API 偶发 TLS timeout
-              $success = $false
-              for ($i = 1; $i -le 3; $i++) {
-                try {
-                  Write-Host "Attempting gh release upload (attempt $i/3)..."
-                  gh release upload $tag "src-tauri/target/release/moyu-reader-portable.exe" --clobber
-                  $success = $true
-                  Write-Host "Successfully uploaded portable exe to GitHub Release $tag"
-                  break
-                } catch {
-                  Write-Warning "Attempt $i failed: $_. Waiting 5s before retry..."
-                  Start-Sleep -Seconds 5
-                }
-              }
-              if (-not $success) {
-                Write-Warning "Could not upload via gh cli after 3 attempts, artifact upload step will still preserve the binary."
-              }
-            }
-          } else {
-            Write-Warning "moyu-reader.exe not found in src-tauri/target/release"
-          }
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Tauri Action 的 tagName 是 v__VERSION__，这里必须从应用配置读取同一个版本，
+          # 避免手动从 main 触发时把 portable 上传到 main 这个不存在的 Release。
+          $config = Get-Content "src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json
+          $tag = "v$($config.version)"
+          $standaloneExe = "src-tauri/target/release/moyu-reader.exe"
+
+          if (-not (Test-Path $standaloneExe)) {
+            throw "Portable source executable not found: $standaloneExe"
+          }
+
+          Copy-Item $standaloneExe -Destination "src-tauri/target/release/moyu-reader-portable.exe" -Force
+          Write-Host "Created portable executable: moyu-reader-portable.exe"
+
+          # gh 原生命令失败不会自动触发 PowerShell try/catch，必须检查 LASTEXITCODE。
+          $success = $false
+          for ($i = 1; $i -le 3; $i++) {
+            Write-Host "Attempting gh release upload to $tag (attempt $i/3)..."
+            gh release upload $tag "src-tauri/target/release/moyu-reader-portable.exe" --clobber
+            if ($LASTEXITCODE -eq 0) {
+              $success = $true
+              Write-Host "Successfully updated portable executable in GitHub Release $tag"
+              break
+            }
+
+            Write-Warning "Attempt $i failed with exit code $LASTEXITCODE. Waiting 5 seconds before retry..."
+            Start-Sleep -Seconds 5
+          }
+
+          if (-not $success) {
+            throw "Could not upload portable executable to GitHub Release $tag"
+          }
 
       - name: Upload Windows exe and msi Artifacts
         if: always()
