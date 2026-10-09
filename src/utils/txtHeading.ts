@@ -146,7 +146,9 @@ const DECORATIVE_END = /[=～~*_＿·•\-—－]{2,}$/;
 const MARKDOWN_PREFIX = /^#{1,6}\s*/;
 const CONTENT_PREFIX = /^(?:正文|章节)[\s:：]*/;
 const TOC_PAGE_NUMBER = /\s*[.．·•。…]{2,}\s*\d{1,4}$/;
-const NUMERIC_LIST_TITLE = /^(\d+)\s*[.、]\s*(\S.{0,79})$/;
+// 纯数字章节常见三种写法：1. 标题、1、标题、1 标题。
+// 必须有标题且保持 medium 置信度，后续再要求连续递增，避免把正文里的普通数字行误认为章节。
+const NUMERIC_HEADING_PATTERN = /^(\d+)(?:\s*[.、:：\-—–]\s*|\s+)(\S.{0,79})$/;
 
 const CHINESE_HEADING_PATTERN = new RegExp(
   String.raw`^第\s*(${CHINESE_NUMBER_SOURCE})\s*(单元|卷|部|篇|章|回|集|话|讲|课|节|幕|场)` +
@@ -164,6 +166,14 @@ const ENGLISH_HEADING_PATTERN = new RegExp(
     String.raw`(?:$|(?:\s*([:：\-—–,，/|｜])\s*|\s+)(\S.{0,79})$)`,
   'i',
 );
+
+// 强包裹符本身说明这一行大概率是标题，可用于提升纯数字标题的置信度。
+const STRONG_TITLE_WRAPPER_PATTERN =
+  /^(?:#{1,6}\s|[=～~*_＿·•\-—－]{2,}[\s\S]*[=～~*_＿·•\-—－]{2,}|[【［\[（(《「『“][\s\S]*[】］\]）)》」』”])$/;
+
+function hasStrongTitleWrapper(text: string): boolean {
+  return STRONG_TITLE_WRAPPER_PATTERN.test(normalizeWidthCharacters(text.trim()));
+}
 
 function normalizeWidthCharacters(text: string): string {
   // TXT 来源常混有全角数字、字母和空格；解析层统一成半角，展示时也保持一致，避免目录键不稳定。
@@ -379,7 +389,7 @@ function parseEnglishHeading(text: string): TxtHeadingInfo | null {
 }
 
 function parseNumericListHeading(text: string): TxtHeadingInfo | null {
-  const match = NUMERIC_LIST_TITLE.exec(text);
+  const match = NUMERIC_HEADING_PATTERN.exec(text);
   if (!match) return null;
 
   const order = Number.parseInt(match[1], 10);
@@ -402,12 +412,19 @@ export function parseTxtHeading(text: string): TxtHeadingInfo | null {
   const cleaned = cleanTxtHeadingText(text);
   if (!cleaned || cleaned.length > MAX_TITLE_LENGTH) return null;
 
-  return (
+  const heading =
     parseChineseHeading(cleaned) ??
     parseSpecialHeading(cleaned) ??
     parseEnglishHeading(cleaned) ??
-    parseNumericListHeading(cleaned)
-  );
+    parseNumericListHeading(cleaned);
+
+  // 裸数字标题必须靠全文连续编号确认；但 ===113 标题===、# 113 标题
+  // 这类强包裹已经提供了排版证据，可以单独提升为高置信度。
+  if (heading?.confidence === 'medium' && hasStrongTitleWrapper(text)) {
+    return { ...heading, confidence: 'high' };
+  }
+
+  return heading;
 }
 
 /** 单行结构级标题判断；编号目录是否有效依赖上下文，因此这里只接受 high 置信度。 */

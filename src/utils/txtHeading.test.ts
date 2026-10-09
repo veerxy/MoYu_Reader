@@ -328,3 +328,38 @@ test('不同卷内完全相同的章节标题不会被当成目录页删除', ()
     [0, 1, 3, 4, 5, 7],
   );
 });
+
+test('装饰符包裹的纯数字章节会被识别', () => {
+  const content = [
+    '===112 离开===',
+    '正文内容',
+    '===113 放籍===',
+    '正文内容',
+    '===114 风起===',
+    '正文内容',
+    '999 孤立编号行',
+  ].join('\n');
+
+  const headings = extractTxtHeadings(content);
+
+  assert.deepEqual(
+    headings.map((item) => item.title),
+    ['112 离开', '113 放籍', '114 风起'],
+  );
+  assert.deepEqual(
+    headings.map((item) => item.paragraphIndex),
+    [0, 2, 4],
+  );
+  assert.ok(headings.every((item) => item.confidence === 'high'));
+});
+
+test('强装饰符中的纯数字标题无需连续编号确认', () => {
+  const heading = parseTxtHeading('===113 放籍===');
+
+  assert.ok(heading);
+  assert.equal(heading.title, '113 放籍');
+  assert.equal(heading.confidence, 'high');
+
+  const headings = extractTxtHeadings(['正文内容', '===113 放籍===', '正文内容'].join('\n'));
+  assert.deepEqual(headings.map((item) => item.paragraphIndex), [1]);
+});
