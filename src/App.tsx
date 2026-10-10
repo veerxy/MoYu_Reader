@@ -17,6 +17,17 @@ import { SettingsModal } from './components/SettingsModal';
 import { useWindowDrag } from './utils/useWindowDrag';
 import { desktop } from './utils/desktop';
 
+/** 等待下一帧，让 WebView 先完成原生窗口尺寸变化后的布局，再挂载重内容。 */
+function waitForNextFrame(): Promise<void> {
+  if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
 export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [activeDoc, setActiveDoc] = useState<DocumentItem | null>(null);
@@ -27,6 +38,8 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [isMaximized, setIsMaximized] = useState<boolean>(false);
   const [isReaderToolbarVisible, setIsReaderToolbarVisible] = useState<boolean>(false);
+  // 快速连点多个文档时，只允许最后一次打开请求真正挂载阅读页。
+  const openDocumentRequestRef = useRef(0);
 
   // 全局支持长按/按住鼠标左键拖动窗口
   useWindowDrag(isMaximized);
@@ -137,24 +150,27 @@ export default function App() {
 
   // Open document in reader
   const handleOpenDocument = async (doc: DocumentItem) => {
+    const requestId = ++openDocumentRequestRef.current;
     const updatedDoc = {
       ...doc,
       lastOpened: Date.now(),
     };
-    setActiveDoc(updatedDoc);
-    setIsReading(true);
-    setIsMinimized(false);
 
     setDocuments((prev) => [
       updatedDoc,
-      ...prev.filter((d) => d.id !== doc.id),
+      ...prev.filter((d) => (d.id !== doc.id)),
     ]);
     await saveDocument(updatedDoc);
 
-    // 切换至阅读模式专属窗口长宽尺寸
-    applyWindowSizeForMode(true);
-  };
+    // 先切换原生窗口尺寸，再挂载阅读内容，避免阅读页经历“大窗口布局 -> 小窗口重排”。
+    await applyWindowSizeForMode(true);
+    await waitForNextFrame();
+    if (openDocumentRequestRef.current !== requestId) return;
 
+    setActiveDoc(updatedDoc);
+    setIsReading(true);
+    setIsMinimized(false);
+  };
   // Update reading progress
   const handleProgressUpdate = async (progress: number, extra?: any) => {
     if (!activeDoc) return;

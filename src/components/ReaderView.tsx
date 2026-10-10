@@ -9,6 +9,7 @@ import {
   EyeOff,
   Keyboard,
   Sparkles,
+  ListTree,
 } from 'lucide-react';
 import { DocumentItem, OutlineItem, ReaderSettings } from '../types';
 import { TxtReader } from './TxtReader';
@@ -16,7 +17,12 @@ import { PdfReader } from './PdfReader';
 import { OutlinePanel } from './OutlinePanel';
 import { SettingsModal } from './SettingsModal';
 import { desktop } from '../utils/desktop';
-import { clampTocWidth, extractTxtOutline } from '../utils/outline';
+import { clampTocWidth, TxtParagraph } from '../utils/outline';
+import { prepareTxtContent } from '../utils/txtContent';
+import { toggleTableOfContents } from '../utils/settings';
+
+const EMPTY_TXT_PARAGRAPHS: TxtParagraph[] = [];
+const EMPTY_CHAPTER_TITLE_INDEXES = new Set<number>();
 
 interface ReaderViewProps {
   document: DocumentItem;
@@ -60,11 +66,15 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     settingsRef.current = settings;
   }, [settings]);
 
-  // TXT 目录在渲染层提取，保证正文标题判断和目录定位使用同一套段落序号。
-  const txtOutlineItems = useMemo(
-    () => (document.type === 'txt' ? extractTxtOutline(document.content || '') : []),
+  // TXT 正文、目录和标题样式共用一次解析结果，避免进入阅读页时重复扫描大文件。
+  const preparedTxtContent = useMemo(
+    () => (document.type === 'txt' ? prepareTxtContent(document.content || '') : null),
     [document.type, document.content],
   );
+  const txtOutlineItems = preparedTxtContent?.outlineItems ?? [];
+  const txtParagraphs = preparedTxtContent?.paragraphs ?? EMPTY_TXT_PARAGRAPHS;
+  const txtChapterTitleIndexes =
+    preparedTxtContent?.chapterTitleIndexes ?? EMPTY_CHAPTER_TITLE_INDEXES;
 
   // 切换文档时清空跳转目标，避免上一个文档的目标章节影响新文档。
   useEffect(() => {
@@ -362,6 +372,25 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
             style={{ WebkitAppRegion: 'no-drag' } as any}
             onMouseDown={(e) => e.stopPropagation()}
           >
+            {/* TOC switch is always available in the toolbar and stays in sync with settings modal. */}
+            <button
+              type="button"
+              id="reader-toc-toggle-btn"
+              role="switch"
+              aria-checked={settings.showTableOfContents}
+              onClick={() => onUpdateSettings(toggleTableOfContents(settings))}
+              className={`h-8 px-2 mr-1 rounded transition-colors flex items-center gap-1 ${
+                settings.showTableOfContents
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent'
+              }`}
+              title={settings.showTableOfContents ? '隐藏文档目录' : '显示文档目录'}
+              aria-label={settings.showTableOfContents ? '隐藏文档目录' : '显示文档目录'}
+            >
+              <ListTree className="w-3.5 h-3.5" />
+              <span className="text-[11px] hidden sm:inline">目录</span>
+            </button>
+
             {/* Quick Hide Toolbar (Tab) */}
             <button
               type="button"
@@ -532,7 +561,8 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         <div className="flex-1 min-w-0 h-full relative">
           {document.type === 'txt' && (
             <TxtReader
-              content={document.content || ''}
+              paragraphs={txtParagraphs}
+              chapterTitleIndexes={txtChapterTitleIndexes}
               settings={settings}
               isBorderVisible={isToolbarVisible}
               initialScrollPercent={document.scrollPercent || document.progress || 0}

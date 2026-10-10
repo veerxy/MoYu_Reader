@@ -590,8 +590,9 @@ function removeLeadingTocEntries(headings: TxtHeading[], totalParagraphs: number
  * 2. 卷内章节编号可能重新从第一章开始，需要父级上下文区分；
  * 3. 文档开头可能自带目录页，需要优先保留正文位置。
  */
-export function extractTxtHeadings(content: string): TxtHeading[] {
-  const paragraphs = parseRenderedParagraphs(content);
+export function extractTxtHeadingsFromParagraphs(
+  paragraphs: Array<{ text: string; index: number }>,
+): TxtHeading[] {
   const candidates = paragraphs
     .map((paragraph) => {
       const heading = parseTxtHeading(paragraph.text);
@@ -609,4 +610,9 @@ export function extractTxtHeadings(content: string): TxtHeading[] {
   }
 
   return [...byKey.values()].sort((a, b) => a.paragraphIndex - b.paragraphIndex);
+}
+
+export function extractTxtHeadings(content: string): TxtHeading[] {
+  // 兼容旧调用方；新渲染链路应传入已解析段落，避免重复扫描全文。
+  return extractTxtHeadingsFromParagraphs(parseRenderedParagraphs(content));
 }

@@ -1,15 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
-import { TxtParagraph, parseTxtParagraphs } from '../utils/outline';
-import { extractTxtHeadings } from '../utils/txtHeading';
+import { TxtParagraph } from '../utils/outline';
 import {
+  calculateTxtAnchoredScrollTop,
+  calculateTxtScrollAnchor,
   calculateTxtScrollProgress,
   createTxtProgressTracker,
   TxtProgressTracker,
+  TxtScrollAnchor,
 } from '../utils/readingProgress';
 
 interface TxtReaderProps {
-  content: string;
+  paragraphs: TxtParagraph[];
+  chapterTitleIndexes: ReadonlySet<number>;
   settings: ReaderSettings;
   initialScrollPercent?: number;
   initialScrollTop?: number;
@@ -18,8 +21,30 @@ interface TxtReaderProps {
   onProgressChange: (progressPercent: number, scrollTop: number) => void;
 }
 
+/**
+ * 找到视口顶部对应的正文段落。
+ *
+ * 使用 elementsFromPoint 而不是遍历全部段落，避免大 TXT 在滚动时
+ * 反复做 O(n) 查找；多个采样点用于跳过段落间距，保证顶部仍在间隙时也能取到下一段。
+ */
+function findTopVisibleParagraph(container: HTMLElement): HTMLElement | null {
+  const rect = container.getBoundingClientRect();
+  const x = Math.min(rect.right - 8, Math.max(rect.left + 8, rect.left + rect.width / 2));
+
+  for (const offsetY of [1, 8, 16, 24]) {
+    const elements = document.elementsFromPoint(x, rect.top + offsetY);
+    const paragraph = elements
+      .map((element) => (element instanceof HTMLElement ? element.closest<HTMLElement>('[data-toc-index]') : null))
+      .find((item) => item !== null);
+    if (paragraph) return paragraph;
+  }
+
+  return null;
+}
+
 export const TxtReader: React.FC<TxtReaderProps> = ({
-  content,
+  paragraphs,
+  chapterTitleIndexes,
   settings,
   initialScrollPercent = 0,
   initialScrollTop,
@@ -30,8 +55,12 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [hasScrolledInitial, setHasScrolledInitial] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const viewportAdjustTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onProgressChangeRef = useRef(onProgressChange);
   const progressTrackerRef = useRef<TxtProgressTracker | null>(null);
+  const scrollAnchorRef = useRef<TxtScrollAnchor | null>(null);
+  // 窗口缩放期间浏览器可能自动调整 scrollTop；此时不能把漂移位置写回锚点。
+  const isViewportAdjustingRef = useRef(false);
 
   if (!progressTrackerRef.current) {
     progressTrackerRef.current = createTxtProgressTracker();
@@ -47,6 +76,56 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     onProgressChangeRef.current(progress, scrollTop);
   }, []);
 
+  const updateScrollAnchor = useCallback((container: HTMLElement) => {
+    const paragraph = findTopVisibleParagraph(container);
+    const paragraphIndex = Number(paragraph?.dataset.tocIndex);
+    if (!paragraph || !Number.isInteger(paragraphIndex)) return;
+
+    const containerTop = container.getBoundingClientRect().top;
+    const paragraphRect = paragraph.getBoundingClientRect();
+    scrollAnchorRef.current = calculateTxtScrollAnchor(
+      paragraphIndex,
+      containerTop,
+      paragraphRect.top,
+      paragraphRect.height,
+    );
+  }, []);
+
+  const restoreScrollAnchor = useCallback(
+    (container: HTMLElement) => {
+      const anchor = scrollAnchorRef.current;
+      if (!anchor) return;
+
+      const target = container.querySelector<HTMLElement>(
+        `[data-toc-index="${anchor.paragraphIndex}"]`,
+      );
+      if (!target) return;
+
+      const containerTop = container.getBoundingClientRect().top;
+      const targetRect = target.getBoundingClientRect();
+      const nextScrollTop = calculateTxtAnchoredScrollTop(anchor, {
+        containerTop,
+        containerScrollTop: container.scrollTop,
+        paragraphTop: targetRect.top,
+        paragraphHeight: targetRect.height,
+      });
+
+      // 浏览器缩放后的像素 scrollTop 可能对应到别的段落；这里按语义段落重新对齐。
+      if (Math.abs(container.scrollTop - nextScrollTop) >= 1) {
+        container.scrollTop = nextScrollTop;
+      }
+
+      updateScrollAnchor(container);
+      const latest = calculateTxtScrollProgress(
+        container.scrollTop,
+        container.scrollHeight,
+        container.clientHeight,
+      );
+      reportProgress(latest.progress, latest.scrollTop);
+    },
+    [reportProgress, updateScrollAnchor],
+  );
+
   // 退出阅读页时取消未触发的节流任务，并同步提交最后一次阅读位置。
   useEffect(() => {
     return () => {
@@ -54,13 +133,17 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
         clearTimeout(scrollTimeoutRef.current);
         scrollTimeoutRef.current = null;
       }
+      if (viewportAdjustTimeoutRef.current) {
+        clearTimeout(viewportAdjustTimeoutRef.current);
+        viewportAdjustTimeoutRef.current = null;
+      }
       progressTrackerRef.current?.flush((progress, scrollTop) => {
         onProgressChangeRef.current(progress, scrollTop);
       });
     };
   }, []);
 
-  // Restore initial scroll position once content is mounted
+  // 内容挂载后恢复上次阅读位置，并立即建立本次会话的语义锚点。
   useEffect(() => {
     const el = containerRef.current;
     if (!el || hasScrolledInitial) return;
@@ -72,24 +155,49 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
         el.scrollTop = ((el.scrollHeight - el.clientHeight) * initialScrollPercent) / 100;
       }
       setHasScrolledInitial(true);
+      updateScrollAnchor(el);
     }, 80);
 
     return () => clearTimeout(timer);
-  }, [initialScrollPercent, initialScrollTop, hasScrolledInitial]);
+  }, [initialScrollPercent, initialScrollTop, hasScrolledInitial, updateScrollAnchor]);
 
-  // 目录跳转和正文渲染共用 parseTxtParagraphs，保证索引不会因空行处理不同而错位。
-  const paragraphs = useMemo<TxtParagraph[]>(() => parseTxtParagraphs(content), [content]);
+  // 窗口尺寸变化后按“段落 + 段内偏移”恢复位置，避免换行变化导致阅读点漂移。
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
 
-  // 标题样式也必须使用“全文过滤后”的结果；否则孤立编号目录会出现目录有项、正文不高亮的不一致。
-  const chapterTitleIndexes = useMemo(
-    () => new Set(extractTxtHeadings(content).map((heading) => heading.paragraphIndex)),
-    [content],
-  );
+    const scheduleRestore = () => {
+      isViewportAdjustingRef.current = true;
+      if (viewportAdjustTimeoutRef.current) {
+        clearTimeout(viewportAdjustTimeoutRef.current);
+      }
+      viewportAdjustTimeoutRef.current = setTimeout(() => {
+        viewportAdjustTimeoutRef.current = null;
+        isViewportAdjustingRef.current = false;
+        restoreScrollAnchor(container);
+      }, 80);
+    };
+
+    const observer = new ResizeObserver(scheduleRestore);
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      if (viewportAdjustTimeoutRef.current) {
+        clearTimeout(viewportAdjustTimeoutRef.current);
+        viewportAdjustTimeoutRef.current = null;
+      }
+    };
+  }, [restoreScrollAnchor]);
 
   // 滚动进度节流提交，减少 IndexedDB 高频写入。
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
+
+    if (!isViewportAdjustingRef.current) {
+      updateScrollAnchor(el);
+    }
 
     const latest = calculateTxtScrollProgress(
       el.scrollTop,
@@ -123,6 +231,12 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       container.scrollTop -
       16;
     container.scrollTop = Math.max(0, targetTop);
+
+    // 目录跳转的语义位置就是目标章节顶部；缩放窗口后必须回到这个章节，而不是像素位置。
+    scrollAnchorRef.current = {
+      paragraphIndex: outlineTargetParagraphIndex,
+      offsetRatio: 0,
+    };
 
     const latest = calculateTxtScrollProgress(
       container.scrollTop,
