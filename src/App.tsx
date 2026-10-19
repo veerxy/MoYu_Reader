@@ -267,8 +267,8 @@ export default function App() {
         isRounded ? 'rounded-2xl' : 'rounded-none'
       } ${
         showBorder
-          ? 'border border-zinc-300/80 dark:border-zinc-700/80 shadow-2xl ring-1 ring-black/5'
-          : 'border-0 shadow-none ring-0'
+          ? 'border border-zinc-300/80 dark:border-zinc-700/80 shadow-lg'
+          : 'border-0 shadow-none'
       }`}
     >
       {/* Windows Standard Titlebar (shown in home view) */}
