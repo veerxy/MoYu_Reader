@@ -255,7 +255,7 @@ export default function App() {
   return (
     <div
       id="desktop-app-container"
-      className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border rounded-none ${getContainerBgClass()}`}
+      className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border rounded-[8px] ${getContainerBgClass()}`}
       style={{ boxShadow: getWindowBorderStyle(showBorder) }}
     >
       {/* Windows Standard Titlebar (shown in home view) */}

@@ -18,5 +18,7 @@ export function getTxtScrollbarClassName(isBorderVisible: boolean): string {
  * inset box-shadow 绘制在窗口边缘且不参与布局，显隐切换时正文宽度保持不变。
  */
 export function getWindowBorderStyle(showBorder: boolean): string {
-  return showBorder ? 'inset 0 0 0 1px rgba(82, 82, 91, 0.55)' : 'none';
+  return showBorder
+    ? 'inset 0 0 0 1px rgba(15, 23, 42, 0.24), 0 12px 32px rgba(15, 23, 42, 0.14)'
+    : 'none';
 }

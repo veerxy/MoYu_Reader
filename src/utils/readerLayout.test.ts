@@ -14,5 +14,8 @@ test('窗口边框样式不参与布局计算', () => {
   // 原生 setShadow 会改变 Windows 客户区宽度，导致 TXT 换行位置漂移。
   // 改用 inset box-shadow 后边框只绘制在窗口边缘，不影响内容宽度。
   assert.equal(getWindowBorderStyle(false), 'none');
-  assert.match(getWindowBorderStyle(true), /^inset 0 0 0 1px /);
+  assert.equal(
+    getWindowBorderStyle(true),
+    'inset 0 0 0 1px rgba(15, 23, 42, 0.24), 0 12px 32px rgba(15, 23, 42, 0.14)',
+  );
 });
