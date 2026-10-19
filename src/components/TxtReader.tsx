@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
 import { TxtParagraph } from '../utils/outline';
 import {
   calculateTxtAnchoredScrollTop,
+  calculateTxtBottomAnchoredScrollTop,
+  calculateTxtBottomScrollAnchor,
   calculateTxtScrollAnchor,
   calculateTxtScrollProgress,
   createTxtProgressTracker,
@@ -22,17 +24,21 @@ interface TxtReaderProps {
 }
 
 /**
- * 找到视口顶部对应的正文段落。
+ * 按视口边缘查找正文段落。
  *
  * 使用 elementsFromPoint 而不是遍历全部段落，避免大 TXT 在滚动时
- * 反复做 O(n) 查找；多个采样点用于跳过段落间距，保证顶部仍在间隙时也能取到下一段。
+ * 反复做 O(n) 查找；多个采样点用于跳过段落间距，保证边缘仍在间隙时也能取到段落。
  */
-function findTopVisibleParagraph(container: HTMLElement): HTMLElement | null {
+function findVisibleParagraphAtEdge(
+  container: HTMLElement,
+  edge: 'top' | 'bottom',
+): HTMLElement | null {
   const rect = container.getBoundingClientRect();
   const x = Math.min(rect.right - 8, Math.max(rect.left + 8, rect.left + rect.width / 2));
 
   for (const offsetY of [1, 8, 16, 24]) {
-    const elements = document.elementsFromPoint(x, rect.top + offsetY);
+    const y = edge === 'top' ? rect.top + offsetY : rect.bottom - offsetY;
+    const elements = document.elementsFromPoint(x, y);
     const paragraph = elements
       .map((element) => (element instanceof HTMLElement ? element.closest<HTMLElement>('[data-toc-index]') : null))
       .find((item) => item !== null);
@@ -40,6 +46,14 @@ function findTopVisibleParagraph(container: HTMLElement): HTMLElement | null {
   }
 
   return null;
+}
+
+function findTopVisibleParagraph(container: HTMLElement): HTMLElement | null {
+  return findVisibleParagraphAtEdge(container, 'top');
+}
+
+function findBottomVisibleParagraph(container: HTMLElement): HTMLElement | null {
+  return findVisibleParagraphAtEdge(container, 'bottom');
 }
 
 export const TxtReader: React.FC<TxtReaderProps> = ({
@@ -59,6 +73,11 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   const onProgressChangeRef = useRef(onProgressChange);
   const progressTrackerRef = useRef<TxtProgressTracker | null>(null);
   const scrollAnchorRef = useRef<TxtScrollAnchor | null>(null);
+  const bottomScrollAnchorRef = useRef<TxtScrollAnchor | null>(null);
+  // 工具栏显隐前记录上一次状态，用于识别“只改变视口高度”的布局切换。
+  const lastBorderVisibleRef = useRef(isBorderVisible);
+  // 工具栏切换产生的 ResizeObserver 回调已经由布局阶段处理，不能再按顶部锚点恢复。
+  const suppressNextViewportRestoreRef = useRef(false);
   // 窗口缩放期间浏览器可能自动调整 scrollTop；此时不能把漂移位置写回锚点。
   const isViewportAdjustingRef = useRef(false);
 
@@ -91,9 +110,25 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     );
   }, []);
 
+  const updateBottomScrollAnchor = useCallback((container: HTMLElement) => {
+    const paragraph = findBottomVisibleParagraph(container);
+    const paragraphIndex = Number(paragraph?.dataset.tocIndex);
+    if (!paragraph || !Number.isInteger(paragraphIndex)) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const paragraphRect = paragraph.getBoundingClientRect();
+    bottomScrollAnchorRef.current = calculateTxtBottomScrollAnchor(
+      paragraphIndex,
+      containerRect.bottom,
+      paragraphRect.top,
+      paragraphRect.height,
+    );
+  }, []);
+
   const restoreScrollAnchor = useCallback(
-    (container: HTMLElement) => {
-      const anchor = scrollAnchorRef.current;
+    (container: HTMLElement, preferBottomAnchor = false) => {
+      const bottomAnchor = bottomScrollAnchorRef.current;
+      const anchor = preferBottomAnchor && bottomAnchor ? bottomAnchor : scrollAnchorRef.current;
       if (!anchor) return;
 
       const target = container.querySelector<HTMLElement>(
@@ -101,14 +136,22 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       );
       if (!target) return;
 
-      const containerTop = container.getBoundingClientRect().top;
+      const containerRect = container.getBoundingClientRect();
       const targetRect = target.getBoundingClientRect();
-      const nextScrollTop = calculateTxtAnchoredScrollTop(anchor, {
-        containerTop,
-        containerScrollTop: container.scrollTop,
-        paragraphTop: targetRect.top,
-        paragraphHeight: targetRect.height,
-      });
+      const nextScrollTop = preferBottomAnchor && bottomAnchor
+        ? calculateTxtBottomAnchoredScrollTop(anchor, {
+            containerScrollTop: container.scrollTop,
+            containerTop: containerRect.top,
+            containerClientHeight: container.clientHeight,
+            paragraphTop: targetRect.top,
+            paragraphHeight: targetRect.height,
+          })
+        : calculateTxtAnchoredScrollTop(anchor, {
+            containerTop: containerRect.top,
+            containerScrollTop: container.scrollTop,
+            paragraphTop: targetRect.top,
+            paragraphHeight: targetRect.height,
+          });
 
       // 浏览器缩放后的像素 scrollTop 可能对应到别的段落；这里按语义段落重新对齐。
       if (Math.abs(container.scrollTop - nextScrollTop) >= 1) {
@@ -116,6 +159,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       }
 
       updateScrollAnchor(container);
+      updateBottomScrollAnchor(container);
       const latest = calculateTxtScrollProgress(
         container.scrollTop,
         container.scrollHeight,
@@ -123,8 +167,21 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       );
       reportProgress(latest.progress, latest.scrollTop);
     },
-    [reportProgress, updateScrollAnchor],
+    [reportProgress, updateBottomScrollAnchor, updateScrollAnchor],
   );
+
+  // 工具栏显隐只改变视口高度；用户关注底部最后一行，所以必须在绘制前
+  // 用底部锚点修正滚动位置，避免先跳到下一行再被 ResizeObserver 拉回来。
+  useLayoutEffect(() => {
+    if (lastBorderVisibleRef.current === isBorderVisible) return;
+    lastBorderVisibleRef.current = isBorderVisible;
+    suppressNextViewportRestoreRef.current = true;
+
+    const container = containerRef.current;
+    if (container && bottomScrollAnchorRef.current) {
+      restoreScrollAnchor(container, true);
+    }
+  }, [isBorderVisible, restoreScrollAnchor]);
 
   // 退出阅读页时取消未触发的节流任务，并同步提交最后一次阅读位置。
   useEffect(() => {
@@ -156,6 +213,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       }
       setHasScrolledInitial(true);
       updateScrollAnchor(el);
+      updateBottomScrollAnchor(el);
     }, 80);
 
     return () => clearTimeout(timer);
@@ -167,6 +225,13 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     if (!container || typeof ResizeObserver === 'undefined') return;
 
     const scheduleRestore = () => {
+      // 工具栏显隐已在 useLayoutEffect 中按底部锚点处理；这里必须跳过，
+      // 否则 80ms 后又按顶部锚点恢复，用户会看到底部行来回跳动。
+      if (suppressNextViewportRestoreRef.current) {
+        suppressNextViewportRestoreRef.current = false;
+        return;
+      }
+
       isViewportAdjustingRef.current = true;
       if (viewportAdjustTimeoutRef.current) {
         clearTimeout(viewportAdjustTimeoutRef.current);
@@ -197,6 +262,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
 
     if (!isViewportAdjustingRef.current) {
       updateScrollAnchor(el);
+      updateBottomScrollAnchor(el);
     }
 
     const latest = calculateTxtScrollProgress(
@@ -237,6 +303,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       paragraphIndex: outlineTargetParagraphIndex,
       offsetRatio: 0,
     };
+    updateBottomScrollAnchor(container);
 
     const latest = calculateTxtScrollProgress(
       container.scrollTop,
@@ -244,7 +311,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       container.clientHeight,
     );
     reportProgress(latest.progress, latest.scrollTop);
-  }, [outlineTargetParagraphIndex, reportProgress]);
+  }, [outlineTargetParagraphIndex, reportProgress, updateBottomScrollAnchor]);
 
   const handleContainerClick = (e: React.MouseEvent) => {
     e.stopPropagation();

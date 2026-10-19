@@ -245,13 +245,14 @@ export default function App() {
     return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
   };
 
-  // 阅读模式与首页的圆角和边框逻辑：
-  // 1. 阅读界面要求圆角和现代化设计。
-  // 2. 当用户按 Tab 显隐工具栏与边框时，必须四周四个方向均呈现统一精致的圆角边框与微妙阴影，而不是只有上方出现。
-  // 3. 当处于最大化模式时贴合屏幕，不展示圆角；非最大化时不论背景模式均具备现代圆角。
-  // 4. Tab 切换时：当 isReaderToolbarVisible 为 true 时，四周完整呈现精致的现代圆角边框；当隐藏时（极简摸鱼）完全无边框。
-  const showBorder = !isMaximized && (!isReading || isReaderToolbarVisible);
-  const isRounded = !isMaximized;
+  // 阅读模式与首页的边框来源必须区分：
+  // 1. 阅读页开启边框时由 Tauri 原生窗口边缘负责外层视觉；WebView 不能再叠加
+  //    rounded/shadow，否则会在原生边缘内再裁出一层“内圆角”。
+  // 2. 首页保持原有 WebView 圆角与阴影，不回滚用户已确认的首页效果。
+  // 3. 最大化时贴合屏幕；阅读页隐藏工具栏时同步关闭原生阴影。
+  const isHomeSurface = !isReading || isMinimized;
+  const showBorder = !isMaximized && (isHomeSurface || isReaderToolbarVisible);
+  const useWebRounded = !isMaximized && isHomeSurface;
 
   // 动态同步原生窗口阴影控制 (Tauri)
   useEffect(() => {
@@ -264,9 +265,9 @@ export default function App() {
     <div
       id="desktop-app-container"
       className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border ${getContainerBgClass()} ${
-        isRounded ? 'rounded-2xl' : 'rounded-none'
+        useWebRounded ? 'rounded-2xl' : 'rounded-none'
       } ${
-        showBorder
+        useWebRounded && showBorder
           ? 'shadow-lg'
           : 'shadow-none'
       }`}

@@ -86,3 +86,47 @@ export function calculateTxtAnchoredScrollTop(
 
   return Math.max(0, Math.round(layout.containerScrollTop + paragraphOffset + offsetInParagraph));
 }
+
+
+/**
+ * 计算当前视口底部对应的 TXT 段落锚点。
+ *
+ * 工具栏显隐只改变视口高度，不改变横向排版；此时用户更关注
+ * “底部最后一行是否稳定”，所以需要单独记录底边在段落内的比例。
+ */
+export function calculateTxtBottomScrollAnchor(
+  paragraphIndex: number,
+  viewportBottom: number,
+  paragraphTop: number,
+  paragraphHeight: number,
+): TxtScrollAnchor {
+  const safeHeight = Math.max(1, paragraphHeight);
+  const rawRatio = (viewportBottom - paragraphTop) / safeHeight;
+  const offsetRatio = Math.min(1, Math.max(0, rawRatio));
+
+  return { paragraphIndex, offsetRatio };
+}
+
+/**
+ * 根据新视口高度把底部段落锚点转换回滚动位置。
+ *
+ * 底部锚点表达的是“视口底边停在段落内 offsetRatio 位置”；
+ * 新视口越矮，目标段落需要越靠近顶部，因此这里向回修正 scrollTop。
+ */
+export function calculateTxtBottomAnchoredScrollTop(
+  anchor: TxtScrollAnchor,
+  layout: {
+    containerScrollTop: number;
+    containerTop: number;
+    containerClientHeight: number;
+    paragraphTop: number;
+    paragraphHeight: number;
+  },
+): number {
+  const paragraphViewportOffset = layout.paragraphTop - layout.containerTop;
+  const paragraphContentOffset = layout.containerScrollTop + paragraphViewportOffset;
+  const offsetInParagraph = anchor.offsetRatio * Math.max(1, layout.paragraphHeight);
+  const desiredViewportOffset = Math.max(0, layout.containerClientHeight - offsetInParagraph);
+
+  return Math.max(0, Math.round(paragraphContentOffset - desiredViewportOffset));
+}

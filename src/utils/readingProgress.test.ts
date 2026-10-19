@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 import {
   calculateTxtAnchoredScrollTop,
+  calculateTxtBottomAnchoredScrollTop,
+  calculateTxtBottomScrollAnchor,
   calculateTxtScrollAnchor,
   calculateTxtScrollProgress,
   createTxtProgressTracker,
@@ -65,4 +67,40 @@ test('TXT 阅读锚点会根据新布局计算恢复后的滚动位置', () => {
   );
 
   assert.equal(scrollTop, 570);
+});
+
+
+test('TXT 底部锚点会记录视口底边在段落内的相对位置', () => {
+  assert.deepEqual(calculateTxtBottomScrollAnchor(4, 180, 120, 50), {
+    paragraphIndex: 4,
+    offsetRatio: 1,
+  });
+
+  // 底边落在段落中间时必须记录比例，避免工具栏显隐后底部行漂移。
+  assert.deepEqual(calculateTxtBottomScrollAnchor(4, 150, 120, 60), {
+    paragraphIndex: 4,
+    offsetRatio: 0.5,
+  });
+
+  // 越界值收敛到段落内部，防止恢复时跳到相邻段落。
+  assert.deepEqual(calculateTxtBottomScrollAnchor(4, 100, 120, 50), {
+    paragraphIndex: 4,
+    offsetRatio: 0,
+  });
+});
+
+test('TXT 底部锚点会根据新视口高度恢复底部滚动位置', () => {
+  const scrollTop = calculateTxtBottomAnchoredScrollTop(
+    { paragraphIndex: 4, offsetRatio: 0.5 },
+    {
+      containerScrollTop: 500,
+      containerTop: 200,
+      containerClientHeight: 160,
+      paragraphTop: 260,
+      paragraphHeight: 100,
+    },
+  );
+
+  // 目标段落当前内容偏移为 560px，新视口下应出现在距顶部 110px 处。
+  assert.equal(scrollTop, 450);
 });
