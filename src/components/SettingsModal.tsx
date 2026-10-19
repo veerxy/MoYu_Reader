@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, RotateCcw, Sliders, Type, Palette, LayoutGrid, ListTree, Check } from 'lucide-react';
+import { X, RotateCcw, Sliders, Type, Palette, LayoutGrid, Check } from 'lucide-react';
 import { ReaderSettings, BackgroundColorType } from '../types';
 import { DEFAULT_SETTINGS } from '../utils/storage';
 
@@ -85,43 +85,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Content */}
         <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
-          {/* 1. 文档目录：置于设置第一行，开关状态与阅读页布局保持一致 */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-medium text-zinc-900 flex items-center gap-1.5">
-                  <ListTree className="w-4 h-4 text-zinc-600" />
-                  <span>文档目录</span>
-                </label>
-                <p className="text-xs text-zinc-500 mt-1">开启后阅读页左侧显示目录，可拖动调节宽度</p>
-              </div>
-
-              <button
-                type="button"
-                id="toc-setting-switch"
-                role="switch"
-                aria-checked={settings.showTableOfContents}
-                aria-label="显示文档目录"
-                onClick={() =>
-                  onUpdateSettings({
-                    ...settings,
-                    showTableOfContents: !settings.showTableOfContents,
-                  })
-                }
-                className={`relative w-11 h-6 rounded-full transition-colors ${
-                  settings.showTableOfContents ? 'bg-zinc-900' : 'bg-zinc-200'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                    settings.showTableOfContents ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* 2. 字体大小 */}
+          {/* 字体大小 */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-zinc-900 flex items-center gap-1.5">

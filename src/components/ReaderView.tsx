@@ -20,7 +20,6 @@ import { desktop } from '../utils/desktop';
 import { clampTocWidth, TxtParagraph } from '../utils/outline';
 import { prepareTxtContent } from '../utils/txtContent';
 import { toggleTableOfContents } from '../utils/settings';
-import { getReaderPreviewBackgroundColor } from '../utils/readerLayout';
 
 const EMPTY_TXT_PARAGRAPHS: TxtParagraph[] = [];
 const EMPTY_CHAPTER_TITLE_INDEXES = new Set<number>();
@@ -51,9 +50,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   // Requirement 2.2: "阅读模式默认背景透明，隐藏边框和顶部栏，按Tab可以切换显隐"
   const [isToolbarVisible, setIsToolbarVisible] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  // 原生最小化前临时打开不透明背景，避免 Windows 任务栏缩略图把透明区域渲染成黑色。
-  const [isTaskbarPreviewActive, setIsTaskbarPreviewActive] = useState<boolean>(false);
-  const taskbarPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showTabTip, setShowTabTip] = useState<boolean>(true);
   const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
   const [outlineTargetParagraphIndex, setOutlineTargetParagraphIndex] = useState<number | undefined>();
@@ -179,13 +175,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   // Determine container background based on settings
   // Requirement 2.1: transparent, dark, white, book
   const getBgStyle = () => {
-    if (isTaskbarPreviewActive) {
-      return {
-        backgroundColor: getReaderPreviewBackgroundColor(settings.bgColor),
-        color: settings.fontColor || '#111827',
-      };
-    }
-
     switch (settings.bgColor) {
       case 'dark':
         return {
@@ -210,37 +199,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         };
     }
   };
-
-  // Windows 缩略图只包含窗口自身位图，不能合成透明区域背后的桌面。
-  // 因此先渲染不透明背景，再等浏览器完成绘制后执行原生最小化。
-  const handleNativeMinimize = useCallback(() => {
-    setIsTaskbarPreviewActive(true);
-    window.requestAnimationFrame(() => {
-      taskbarPreviewTimerRef.current = setTimeout(() => {
-        taskbarPreviewTimerRef.current = null;
-        void desktop.minimize();
-      }, 0);
-    });
-  }, []);
-
-  // 从任务栏恢复窗口时会重新获得焦点，此时恢复用户选择的透明阅读背景。
-  useEffect(() => {
-    if (!isTaskbarPreviewActive) return;
-
-    const restoreReaderBackground = () => setIsTaskbarPreviewActive(false);
-    window.addEventListener('focus', restoreReaderBackground);
-    return () => window.removeEventListener('focus', restoreReaderBackground);
-  }, [isTaskbarPreviewActive]);
-
-  // 阅读页卸载时取消尚未执行的最小化任务，避免异步回调访问已卸载窗口。
-  useEffect(() => {
-    return () => {
-      if (taskbarPreviewTimerRef.current) {
-        clearTimeout(taskbarPreviewTimerRef.current);
-        taskbarPreviewTimerRef.current = null;
-      }
-    };
-  }, []);
 
   // 用户需求：阅读窗口的×直接关闭应用程序即可
   const handleCloseApp = (e?: React.MouseEvent) => {
@@ -464,7 +422,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               id="reader-win-minimize-btn"
               onClick={() => {
                 if (desktop.isDesktop()) {
-                  handleNativeMinimize();
+                  desktop.minimize();
                 } else {
                   onMinimize();
                 }

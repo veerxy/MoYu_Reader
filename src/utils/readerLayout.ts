@@ -1,5 +1,3 @@
-import { BackgroundColorType } from '../types';
-
 /**
  * TXT 滚动条样式必须与工具栏显隐无关。
  *
@@ -11,23 +9,14 @@ export function getTxtScrollbarClassName(isBorderVisible: boolean): string {
   return 'hide-scrollbar';
 }
 
+
 /**
- * 获取原生最小化前的任务栏预览背景。
+ * 获取窗口边框样式。
  *
- * Windows 缩略图只包含窗口自身位图，无法合成透明区域背后的桌面；
- * 因此透明阅读模式需要在最小化前临时提供不透明背景，避免预览出现黑色。
+ * 不再使用 Tauri setShadow：Windows 上切换原生阴影会改变客户区尺寸，
+ * 一像素宽度差异就足以让 TXT 某一行少显示一个字。
+ * inset box-shadow 绘制在窗口边缘且不参与布局，显隐切换时正文宽度保持不变。
  */
-export function getReaderPreviewBackgroundColor(bgColor: BackgroundColorType): string {
-  switch (bgColor) {
-    case 'dark':
-      return '#18181b';
-    case 'white':
-      return '#ffffff';
-    case 'book':
-      return '#f4ecd8';
-    case 'transparent':
-      return '#f8f9fa';
-    default:
-      return bgColor;
-  }
+export function getWindowBorderStyle(showBorder: boolean): string {
+  return showBorder ? 'inset 0 0 0 1px rgba(82, 82, 91, 0.55)' : 'none';
 }

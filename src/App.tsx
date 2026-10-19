@@ -16,6 +16,7 @@ import { MinimizedWidget } from './components/MinimizedWidget';
 import { SettingsModal } from './components/SettingsModal';
 import { useWindowDrag } from './utils/useWindowDrag';
 import { desktop } from './utils/desktop';
+import { getWindowBorderStyle } from './utils/readerLayout';
 
 /** 等待下一帧，让 WebView 先完成原生窗口尺寸变化后的布局，再挂载重内容。 */
 function waitForNextFrame(): Promise<void> {
@@ -245,23 +246,17 @@ export default function App() {
     return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
   };
 
-  // 首页与阅读页统一只使用 Tauri 原生窗口边缘：
-  // WebView 内部的 rounded/shadow 会在原生边缘内形成第二层裁剪，
-  // 也会让标题栏红色关闭热区无法铺到窗口最外侧。
+  // 边框必须只做视觉绘制，不能改变 WebView 客户区尺寸：
+  // 1. Tauri setShadow 在 Windows 上会改变客户区，导致 TXT 换行宽度漂移。
+  // 2. inset box-shadow 绘制在最外层内部，不参与布局，也不会形成第二层圆角。
   const isHomeSurface = !isReading || isMinimized;
   const showBorder = !isMaximized && (isHomeSurface || isReaderToolbarVisible);
-
-  // 动态同步原生窗口阴影控制 (Tauri)
-  useEffect(() => {
-    if (desktop.isDesktop()) {
-      desktop.setShadow(showBorder);
-    }
-  }, [showBorder]);
 
   return (
     <div
       id="desktop-app-container"
-      className="relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border rounded-none shadow-none ${getContainerBgClass()}"
+      className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border rounded-none ${getContainerBgClass()}`}
+      style={{ boxShadow: getWindowBorderStyle(showBorder) }}
     >
       {/* Windows Standard Titlebar (shown in home view) */}
       {(!isReading || isMinimized) && (
