@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
 import { TxtParagraph } from '../utils/outline';
+import { getTxtScrollbarClassName } from '../utils/readerLayout';
 import {
   calculateTxtAnchoredScrollTop,
   calculateTxtBottomAnchoredScrollTop,
@@ -326,9 +327,9 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
         e.stopPropagation();
       }}
       id="txt-reader-scroll-container"
-      className={`w-full h-full overflow-y-auto px-4 py-2 sm:px-10 sm:py-6 md:px-16 select-text outline-hidden ${
-        isBorderVisible ? '' : 'hide-scrollbar'
-      }`}
+      className={`w-full h-full overflow-y-auto px-4 py-2 sm:px-10 sm:py-6 md:px-16 select-text outline-hidden ${getTxtScrollbarClassName(
+        isBorderVisible,
+      )}`}
       style={{
         pointerEvents: 'auto',
         color: settings.fontColor,

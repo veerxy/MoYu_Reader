@@ -245,14 +245,11 @@ export default function App() {
     return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
   };
 
-  // 阅读模式与首页的边框来源必须区分：
-  // 1. 阅读页开启边框时由 Tauri 原生窗口边缘负责外层视觉；WebView 不能再叠加
-  //    rounded/shadow，否则会在原生边缘内再裁出一层“内圆角”。
-  // 2. 首页保持原有 WebView 圆角与阴影，不回滚用户已确认的首页效果。
-  // 3. 最大化时贴合屏幕；阅读页隐藏工具栏时同步关闭原生阴影。
+  // 首页与阅读页统一只使用 Tauri 原生窗口边缘：
+  // WebView 内部的 rounded/shadow 会在原生边缘内形成第二层裁剪，
+  // 也会让标题栏红色关闭热区无法铺到窗口最外侧。
   const isHomeSurface = !isReading || isMinimized;
   const showBorder = !isMaximized && (isHomeSurface || isReaderToolbarVisible);
-  const useWebRounded = !isMaximized && isHomeSurface;
 
   // 动态同步原生窗口阴影控制 (Tauri)
   useEffect(() => {
@@ -264,13 +261,7 @@ export default function App() {
   return (
     <div
       id="desktop-app-container"
-      className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border ${getContainerBgClass()} ${
-        useWebRounded ? 'rounded-2xl' : 'rounded-none'
-      } ${
-        useWebRounded && showBorder
-          ? 'shadow-lg'
-          : 'shadow-none'
-      }`}
+      className="relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border rounded-none shadow-none ${getContainerBgClass()}"
     >
       {/* Windows Standard Titlebar (shown in home view) */}
       {(!isReading || isMinimized) && (

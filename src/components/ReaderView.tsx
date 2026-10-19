@@ -20,6 +20,7 @@ import { desktop } from '../utils/desktop';
 import { clampTocWidth, TxtParagraph } from '../utils/outline';
 import { prepareTxtContent } from '../utils/txtContent';
 import { toggleTableOfContents } from '../utils/settings';
+import { getReaderPreviewBackgroundColor } from '../utils/readerLayout';
 
 const EMPTY_TXT_PARAGRAPHS: TxtParagraph[] = [];
 const EMPTY_CHAPTER_TITLE_INDEXES = new Set<number>();
@@ -50,6 +51,9 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   // Requirement 2.2: "阅读模式默认背景透明，隐藏边框和顶部栏，按Tab可以切换显隐"
   const [isToolbarVisible, setIsToolbarVisible] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  // 原生最小化前临时打开不透明背景，避免 Windows 任务栏缩略图把透明区域渲染成黑色。
+  const [isTaskbarPreviewActive, setIsTaskbarPreviewActive] = useState<boolean>(false);
+  const taskbarPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showTabTip, setShowTabTip] = useState<boolean>(true);
   const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
   const [outlineTargetParagraphIndex, setOutlineTargetParagraphIndex] = useState<number | undefined>();
@@ -175,6 +179,13 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   // Determine container background based on settings
   // Requirement 2.1: transparent, dark, white, book
   const getBgStyle = () => {
+    if (isTaskbarPreviewActive) {
+      return {
+        backgroundColor: getReaderPreviewBackgroundColor(settings.bgColor),
+        color: settings.fontColor || '#111827',
+      };
+    }
+
     switch (settings.bgColor) {
       case 'dark':
         return {
@@ -199,6 +210,37 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         };
     }
   };
+
+  // Windows 缩略图只包含窗口自身位图，不能合成透明区域背后的桌面。
+  // 因此先渲染不透明背景，再等浏览器完成绘制后执行原生最小化。
+  const handleNativeMinimize = useCallback(() => {
+    setIsTaskbarPreviewActive(true);
+    window.requestAnimationFrame(() => {
+      taskbarPreviewTimerRef.current = setTimeout(() => {
+        taskbarPreviewTimerRef.current = null;
+        void desktop.minimize();
+      }, 0);
+    });
+  }, []);
+
+  // 从任务栏恢复窗口时会重新获得焦点，此时恢复用户选择的透明阅读背景。
+  useEffect(() => {
+    if (!isTaskbarPreviewActive) return;
+
+    const restoreReaderBackground = () => setIsTaskbarPreviewActive(false);
+    window.addEventListener('focus', restoreReaderBackground);
+    return () => window.removeEventListener('focus', restoreReaderBackground);
+  }, [isTaskbarPreviewActive]);
+
+  // 阅读页卸载时取消尚未执行的最小化任务，避免异步回调访问已卸载窗口。
+  useEffect(() => {
+    return () => {
+      if (taskbarPreviewTimerRef.current) {
+        clearTimeout(taskbarPreviewTimerRef.current);
+        taskbarPreviewTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // 用户需求：阅读窗口的×直接关闭应用程序即可
   const handleCloseApp = (e?: React.MouseEvent) => {
@@ -239,7 +281,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           onMouseDown={onStartDrag}
           onDoubleClick={onToggleMaximize}
           style={{ WebkitAppRegion: 'drag' } as any}
-          className="shrink-0 h-10 flex items-center justify-between px-3 z-30 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md cursor-move select-none text-xs"
+          className="shrink-0 h-10 flex items-center justify-between pl-3 pr-0 z-30 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md cursor-move select-none text-xs"
         >
           {/* Left: Back button, Document Info & Progress */}
           <div
@@ -408,7 +450,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               type="button"
               id="reader-settings-btn"
               onClick={() => setIsSettingsOpen(true)}
-              className="h-8 px-2.5 mr-2 rounded text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 border border-zinc-200/80 dark:border-zinc-700"
+              className="h-8 px-2.5 mr-2 rounded text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1"
               title="阅读外观与排版设置"
             >
               <Settings className="w-3.5 h-3.5 text-zinc-500" />
@@ -422,7 +464,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
               id="reader-win-minimize-btn"
               onClick={() => {
                 if (desktop.isDesktop()) {
-                  desktop.minimize();
+                  handleNativeMinimize();
                 } else {
                   onMinimize();
                 }
