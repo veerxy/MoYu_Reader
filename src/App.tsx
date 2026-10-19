@@ -263,12 +263,12 @@ export default function App() {
   return (
     <div
       id="desktop-app-container"
-      className={`w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border ${getContainerBgClass()} ${
+      className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border ${getContainerBgClass()} ${
         isRounded ? 'rounded-2xl' : 'rounded-none'
       } ${
         showBorder
-          ? 'border border-zinc-300/80 dark:border-zinc-700/80 shadow-lg'
-          : 'border-0 shadow-none'
+          ? 'shadow-lg'
+          : 'shadow-none'
       }`}
     >
       {/* Windows Standard Titlebar (shown in home view) */}
@@ -327,6 +327,16 @@ export default function App() {
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
       />
+
+      {/* 真正的窗口边框放在内容最外层，避免标题栏/红色关闭按钮在圆角处形成第二层内边框。 */}
+      {showBorder && (
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 z-[100] ${
+            isRounded ? 'rounded-2xl' : 'rounded-none'
+          } border border-zinc-300/80 dark:border-zinc-700/80`}
+        />
+      )}
     </div>
   );
 }
