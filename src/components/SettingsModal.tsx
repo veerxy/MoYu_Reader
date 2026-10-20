@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, RotateCcw, Sliders, Type, Palette, LayoutGrid, Check } from 'lucide-react';
-import { ReaderSettings, BackgroundColorType } from '../types';
+import { ReaderSettings, BackgroundColorType, DocumentType } from '../types';
 import { DEFAULT_SETTINGS } from '../utils/storage';
 
 interface SettingsModalProps {
@@ -8,6 +8,7 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: ReaderSettings;
   onUpdateSettings: (newSettings: ReaderSettings) => void;
+  documentType?: DocumentType;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -15,6 +16,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
+  documentType,
 }) => {
   if (!isOpen) return null;
 
@@ -329,6 +331,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 );
               })}
             </div>
+
+            {/* PDF 文档自身拥有固定背景，这里只提示外围界面可调，避免用户误解客户端失效。 */}
+            {documentType === 'pdf' && (
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                PDF 文档内部背景色由文档自身决定，客户端仅支持调整文档外围的界面背景色。
+              </p>
+            )}
           </div>
         </div>
 

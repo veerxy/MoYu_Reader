@@ -599,6 +599,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={onUpdateSettings}
+        documentType={document.type}
       />
     </div>
   );
