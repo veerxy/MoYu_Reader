@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { calculateTxtLineScrollStep, getTxtScrollbarClassName, getWindowBorderStyle } from './readerLayout';
+import { calculateTxtKeyboardPageScrollStep, getTxtScrollbarClassName, getWindowBorderStyle } from './readerLayout';
 
 test('TXT 滚动条样式在边框显隐时必须保持一致', () => {
   // 工具栏显隐不能改变正文可用宽度，否则换行和底部可见文字都会变化。
@@ -22,9 +22,10 @@ test('窗口边框在显隐时保持相同宽度', () => {
 });
 
 
-test('TXT 键盘滚动步长优先使用实际行高', () => {
-  // 键盘上下键必须一次只滚动一行，不能使用固定像素。
-  assert.equal(calculateTxtLineScrollStep('28px', 16, 1.8), 28);
-  assert.equal(calculateTxtLineScrollStep('normal', 16, 1.8), 28.8);
-  assert.equal(calculateTxtLineScrollStep('', 16, 1.8), 28.8);
+test('TXT 键盘按页滚动会保留一行重叠内容', () => {
+  // 每次接近一个视口高度，但少滚一行，避免底部被裁切的行在新页面顶部仍然被裁切。
+  assert.equal(calculateTxtKeyboardPageScrollStep(28, 800), 772);
+  assert.equal(calculateTxtKeyboardPageScrollStep(28.8, 600), 571.2);
+  // 极小窗口下至少滚动一行，保证按键仍然可用。
+  assert.equal(calculateTxtKeyboardPageScrollStep(28, 40), 28);
 });

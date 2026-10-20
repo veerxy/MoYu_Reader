@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
 import { TxtParagraph } from '../utils/outline';
-import { calculateTxtLineScrollStep, getTxtScrollbarClassName } from '../utils/readerLayout';
+import {
+  calculateTxtKeyboardPageScrollStep,
+  calculateTxtLineScrollStep,
+  getTxtScrollbarClassName,
+} from '../utils/readerLayout';
 import {
   createTxtChunks,
   estimateTxtChunkHeight,
@@ -372,7 +376,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     }, 150);
   };
 
-  // 键盘上下键按“一行文字”滚动；跳过输入控件，避免影响设置弹窗的键盘操作。
+  // 键盘上下键按页滚动；跳过输入控件，避免影响设置弹窗的键盘操作。
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
@@ -393,11 +397,13 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
 
       // 优先取视口顶边实际段落的行高；未渲染或落在间隙时回退到容器行高。
       const lineElement = findTopVisibleParagraph(container) ?? container;
-      const step = calculateTxtLineScrollStep(
+      const lineHeight = calculateTxtLineScrollStep(
         window.getComputedStyle(lineElement).lineHeight,
         settings.fontSize,
         settings.lineHeight,
       );
+      // 上下键按页滚动，但比视口少一行，防止边界处出现半行文字。
+      const step = calculateTxtKeyboardPageScrollStep(lineHeight, container.clientHeight);
       if (!Number.isFinite(step) || step <= 0) return;
 
       const direction = event.key === 'ArrowUp' ? -1 : 1;

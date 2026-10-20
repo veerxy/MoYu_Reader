@@ -28,6 +28,23 @@ export function calculateTxtLineScrollStep(
 }
 
 /**
+ * 计算 TXT 键盘按页滚动的步长。
+ *
+ * 步长比视口高度少一行：上一页底部被裁切的行会完整进入下一页，
+ * 避免按整页滚动时半行文字一直卡在边界；同时保留少量重叠，阅读不跳行。
+ */
+export function calculateTxtKeyboardPageScrollStep(
+  lineHeight: number,
+  viewportHeight: number,
+): number {
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0 || !Number.isFinite(viewportHeight)) {
+    return 0;
+  }
+
+  return Math.max(lineHeight, viewportHeight - lineHeight);
+}
+
+/**
  * 获取窗口外层边框样式。
  *
  * 这里必须使用真正的 border，而不是 box-shadow：
