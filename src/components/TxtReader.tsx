@@ -1,7 +1,13 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
 import { TxtParagraph } from '../utils/outline';
 import { getTxtScrollbarClassName } from '../utils/readerLayout';
+import {
+  createTxtChunks,
+  estimateTxtChunkHeight,
+  getTxtChunkIndexForParagraph,
+  TXT_VIRTUAL_OBSERVER_MARGIN,
+} from '../utils/txtVirtualization';
 import {
   calculateTxtAnchoredScrollTop,
   calculateTxtBottomAnchoredScrollTop,
@@ -81,6 +87,13 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   const suppressNextViewportRestoreRef = useRef(false);
   // 窗口缩放期间浏览器可能自动调整 scrollTop；此时不能把漂移位置写回锚点。
   const isViewportAdjustingRef = useRef(false);
+  // TXT 使用分块虚拟化：先渲染占位块，靠近视口时才渲染真实段落。
+  const txtChunks = useMemo(() => createTxtChunks(paragraphs), [paragraphs]);
+  const [renderedChunkIndexes, setRenderedChunkIndexes] = useState<ReadonlySet<number>>(
+    () => new Set<number>(),
+  );
+  const chunkElementsRef = useRef(new Map<number, HTMLDivElement>());
+  const [contentWidth, setContentWidth] = useState(440);
 
   if (!progressTrackerRef.current) {
     progressTrackerRef.current = createTxtProgressTracker();
@@ -94,6 +107,82 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
   const reportProgress = useCallback((progress: number, scrollTop: number) => {
     progressTrackerRef.current?.update(progress, scrollTop);
     onProgressChangeRef.current(progress, scrollTop);
+  }, []);
+
+  // max-w-3xl 限制正文最大 768px；小窗口下按 sm 断点左右 padding 估算可用宽度。
+  const updateContentWidth = useCallback((element: HTMLElement) => {
+    const nextWidth = Math.min(768, Math.max(240, element.clientWidth - 80));
+    setContentWidth((previous) => (Math.abs(previous - nextWidth) >= 1 ? nextWidth : previous));
+  }, []);
+
+  const chunkHeights = useMemo(
+    () => txtChunks.map((chunk) => estimateTxtChunkHeight(chunk, chapterTitleIndexes, settings, contentWidth)),
+    [txtChunks, chapterTitleIndexes, settings.fontSize, settings.lineHeight, contentWidth],
+  );
+
+  const ensureChunkIndexes = useCallback((indexes: number[]) => {
+    setRenderedChunkIndexes((previous) => {
+      let changed = false;
+      const next = new Set(previous);
+
+      for (const index of indexes) {
+        if (index < 0 || index >= txtChunks.length || next.has(index)) continue;
+        next.add(index);
+        changed = true;
+      }
+
+      return changed ? next : previous;
+    });
+  }, [txtChunks.length]);
+
+  // 首次进入时优先渲染恢复位置附近的分块，避免先看到空白再等 Observer 补内容。
+  useEffect(() => {
+    if (txtChunks.length === 0) return;
+
+    let targetChunkIndex = 0;
+    if (initialScrollTop !== undefined && initialScrollTop > 0) {
+      const totalHeight = chunkHeights.reduce((sum, height) => sum + height, 0);
+      const ratio = Math.min(1, initialScrollTop / Math.max(1, totalHeight));
+      targetChunkIndex = Math.floor((txtChunks.length - 1) * ratio);
+    } else if (initialScrollPercent > 0) {
+      targetChunkIndex = Math.floor(((txtChunks.length - 1) * initialScrollPercent) / 100);
+    }
+
+    ensureChunkIndexes([
+      Math.max(0, targetChunkIndex - 1),
+      targetChunkIndex,
+      Math.min(txtChunks.length - 1, targetChunkIndex + 1),
+    ]);
+  }, [txtChunks.length, chunkHeights, initialScrollPercent, initialScrollTop, ensureChunkIndexes]);
+
+  // 用一个 Observer 管理所有分块，靠近视口的块才提交真实 DOM。
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const indexes = entries
+          .filter((entry) => entry.isIntersecting)
+          .map((entry) => Number((entry.target as HTMLElement).dataset.virtualChunkIndex))
+          .filter((index) => Number.isInteger(index));
+        ensureChunkIndexes(indexes);
+      },
+      { root: container, rootMargin: `${TXT_VIRTUAL_OBSERVER_MARGIN}px 0px` },
+    );
+
+    for (const element of chunkElementsRef.current.values()) {
+      observer.observe(element);
+    }
+
+    return () => observer.disconnect();
+  }, [txtChunks, ensureChunkIndexes]);
+
+  const setChunkElementRef = useCallback((index: number) => {
+    return (element: HTMLDivElement | null) => {
+      if (element) chunkElementsRef.current.set(index, element);
+      else chunkElementsRef.current.delete(index);
+    };
   }, []);
 
   const updateScrollAnchor = useCallback((container: HTMLElement) => {
@@ -226,6 +315,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
     if (!container || typeof ResizeObserver === 'undefined') return;
 
     const scheduleRestore = () => {
+      updateContentWidth(container);
       // 工具栏显隐已在 useLayoutEffect 中按底部锚点处理；这里必须跳过，
       // 否则 80ms 后又按顶部锚点恢复，用户会看到底部行来回跳动。
       if (suppressNextViewportRestoreRef.current) {
@@ -254,7 +344,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
         viewportAdjustTimeoutRef.current = null;
       }
     };
-  }, [restoreScrollAnchor]);
+  }, [restoreScrollAnchor, updateContentWidth]);
 
   // 滚动进度节流提交，减少 IndexedDB 高频写入。
   const handleScroll = () => {
@@ -281,6 +371,18 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       onProgressChangeRef.current(latest.progress, latest.scrollTop);
     }, 150);
   };
+
+  // 先保证目录目标所在分块已渲染；滚动定位必须等真实 DOM 存在后才能执行。
+  useEffect(() => {
+    if (outlineTargetParagraphIndex === undefined) return;
+
+    const targetChunkIndex = getTxtChunkIndexForParagraph(outlineTargetParagraphIndex);
+    ensureChunkIndexes([
+      Math.max(0, targetChunkIndex - 1),
+      targetChunkIndex,
+      Math.min(txtChunks.length - 1, targetChunkIndex + 1),
+    ]);
+  }, [outlineTargetParagraphIndex, txtChunks.length, ensureChunkIndexes]);
 
   // 点击目录后按段落序号定位；使用容器相对坐标，避免窗口位置变化影响跳转精度。
   useEffect(() => {
@@ -312,7 +414,7 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       container.clientHeight,
     );
     reportProgress(latest.progress, latest.scrollTop);
-  }, [outlineTargetParagraphIndex, reportProgress, updateBottomScrollAnchor]);
+  }, [outlineTargetParagraphIndex, renderedChunkIndexes, reportProgress, updateBottomScrollAnchor]);
 
   const handleContainerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -338,28 +440,44 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       }}
     >
       <div className="max-w-3xl mx-auto space-y-4">
-        {paragraphs.length > 0 ? (
-          paragraphs.map((paragraph) => {
-            const isChapterTitle = chapterTitleIndexes.has(paragraph.index);
+        {txtChunks.map((chunk, chunkIndex) => {
+          const isChunkRendered = renderedChunkIndexes.has(chunkIndex);
 
-            return (
-              <p
-                key={paragraph.index}
-                data-toc-index={paragraph.index}
-                className={`${
-                  isChapterTitle
-                    ? 'font-bold text-lg pt-6 pb-2 text-center opacity-95 tracking-wide'
-                    : 'indent-8 text-justify'
-                }`}
-                style={{
-                  textIndent: isChapterTitle ? '0' : '2em',
-                }}
-              >
-                {paragraph.text}
-              </p>
-            );
-          })
-        ) : (
+          return (
+            <div
+              key={`txt-chunk-${chunk.startIndex}`}
+              ref={setChunkElementRef(chunkIndex)}
+              data-virtual-chunk-index={chunkIndex}
+              aria-hidden={!isChunkRendered}
+              className="space-y-4"
+              style={isChunkRendered ? undefined : { height: `${chunkHeights[chunkIndex]}px` }}
+            >
+              {isChunkRendered &&
+                chunk.paragraphs.map((paragraph) => {
+                  const isChapterTitle = chapterTitleIndexes.has(paragraph.index);
+
+                  return (
+                    <p
+                      key={paragraph.index}
+                      data-toc-index={paragraph.index}
+                      className={`${
+                        isChapterTitle
+                          ? 'font-bold text-lg pt-6 pb-2 text-center opacity-95 tracking-wide'
+                          : 'indent-8 text-justify'
+                      }`}
+                      style={{
+                        textIndent: isChapterTitle ? '0' : '2em',
+                      }}
+                    >
+                      {paragraph.text}
+                    </p>
+                  );
+                })}
+            </div>
+          );
+        })}
+
+        {paragraphs.length === 0 && (
           <div className="text-center py-20 opacity-60">
             <p>文档内容为空或格式异常</p>
           </div>

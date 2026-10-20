@@ -51,7 +51,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   const [isToolbarVisible, setIsToolbarVisible] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [showTabTip, setShowTabTip] = useState<boolean>(true);
-  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
+  const [pdfOutlineItems, setPdfOutlineItems] = useState<OutlineItem[]>([]);
   const [outlineTargetParagraphIndex, setOutlineTargetParagraphIndex] = useState<number | undefined>();
   const [outlineTargetPage, setOutlineTargetPage] = useState<number | undefined>();
   const [tocWidth, setTocWidth] = useState(() => clampTocWidth(settings.tocWidth));
@@ -78,10 +78,13 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
 
   // 切换文档时清空跳转目标，避免上一个文档的目标章节影响新文档。
   useEffect(() => {
-    setOutlineItems(document.type === 'txt' ? txtOutlineItems : []);
+    setPdfOutlineItems([]);
     setOutlineTargetParagraphIndex(undefined);
     setOutlineTargetPage(undefined);
-  }, [document.id, document.type, txtOutlineItems]);
+  }, [document.id]);
+
+  // TXT 目录直接来自 useMemo 结果，不落 state，避免大文档挂载后再完整渲染一遍正文。
+  const outlineItems = document.type === 'txt' ? txtOutlineItems : pdfOutlineItems;
 
   // 拖动过程中使用本地宽度，只在结束时持久化，避免高频写 localStorage。
   useEffect(() => {
@@ -128,7 +131,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   };
 
   const handlePdfOutlineChange = useCallback((items: OutlineItem[]) => {
-    setOutlineItems(items);
+    setPdfOutlineItems(items);
   }, []);
 
   const handleOutlineNavigate = useCallback((item: OutlineItem) => {
