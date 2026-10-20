@@ -11,6 +11,21 @@
 
 [![Release](https://img.shields.io/github/v/release/veerxy/MoYu_Reader?style=flat-square&label=%E5%8F%91%E5%B8%83%E7%89%88%E6%9C%AC)](https://github.com/veerxy/MoYu_Reader/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows-blue?style=flat-square)](https://github.com/veerxy/MoYu_Reader/releases)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE)
+
+---
+
+## 🧾 Project Facts
+
+**MoYu Reader** is a lightweight, open-source Windows desktop reader for TXT and PDF documents.
+
+- **License:** Apache-2.0
+- **Source code:** https://github.com/veerxy/MoYu_Reader
+- **Build system:** GitHub Actions
+- **Automated tests:** 37 unit tests
+- **Releases:** Public GitHub Releases with portable and installer artifacts
+
+For review purposes: this project is publicly maintained, uses automated CI/CD, and is currently applying to use SignPath Foundation for Windows code signing.
 
 </div>
 
