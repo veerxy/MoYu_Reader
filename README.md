@@ -35,9 +35,8 @@ For review purposes: this project is publicly maintained, uses automated CI/CD, 
 
 ### 🫥 隐蔽摸鱼模式
 - **透明无边框窗口** —— 阅读模式默认窗口透明、无标题栏、无边框；TXT 文字直接悬浮在屏幕上，PDF 则呈现悬浮的纸面页面
-- **Tab 一键隐身** —— 按 `Tab` 隐藏/显示工具栏与边框，老板走近瞬间"消失"
-- **窗口置顶** —— 始终悬浮于其他窗口之上，边干活边看
-- **迷你挂件** —— 最小化后缩为角落小卡片，显示书名与进度，点击即恢复
+- **Tab 一键隐藏边框** —— 按 `Tab` 隐藏/显示工具栏与边框，让文字与桌面文字融为一体
+- **窗口快速隐藏** —— 点击窗口外的区域会自动将点击区域置顶，隐藏TXT文字，完美隐身
 
 ### 📖 阅读体验
 - **TXT / PDF 双格式** —— 支持点击浏览与拖拽导入
@@ -74,8 +73,8 @@ For review purposes: this project is publicly maintained, uses automated CI/CD, 
 |------|------|
 | `Tab` | 显示 / 隐藏工具栏与边框（摸鱼核心键） |
 | `Esc` | 关闭设置弹窗 / 退出阅读模式 |
-| `←` `PageUp` | PDF 上一页 |
-| `→` `PageDown` `空格` | PDF 下一页 |
+| `←` `PageUp` | 上滑 |
+| `→` `PageDown` `空格` | 下滑 |
 
 ### 摸鱼姿势
 
