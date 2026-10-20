@@ -11,7 +11,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/utils/outline.test.ts src/utils/txtHeading.test.ts src/utils/readingProgress.test.ts src/utils/txtContent.test.ts src/utils/settings.test.ts src/utils/readerLayout.test.ts"
+    "test": "tsx --test src/utils/outline.test.ts src/utils/txtHeading.test.ts src/utils/readingProgress.test.ts src/utils/txtContent.test.ts src/utils/settings.test.ts src/utils/storage.test.ts src/utils/readerLayout.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

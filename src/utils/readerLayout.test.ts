@@ -16,6 +16,6 @@ test('窗口边框样式不参与布局计算', () => {
   assert.equal(getWindowBorderStyle(false), 'none');
   assert.equal(
     getWindowBorderStyle(true),
-    'inset 0 0 0 1px rgba(15, 23, 42, 0.24), 0 12px 32px rgba(15, 23, 42, 0.14)',
+    'inset 0 0 0 1px rgba(39, 39, 42, 0.82)',
   );
 });

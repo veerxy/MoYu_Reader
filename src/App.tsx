@@ -7,6 +7,7 @@ import {
   deleteDocument,
   loadSettings,
   saveSettings,
+  upsertDocumentMeta,
 } from './utils/storage';
 import { getInitialSampleDocuments } from './utils/sampleDocs';
 import { DesktopHeader } from './components/DesktopHeader';
@@ -161,7 +162,8 @@ export default function App() {
       updatedDoc,
       ...prev.filter((d) => (d.id !== doc.id)),
     ]);
-    await saveDocument(updatedDoc);
+    // 只更新打开时间等轻量元数据；完整正文已在导入时保存，不能在进入阅读前重复克隆大文件。
+    upsertDocumentMeta(updatedDoc);
 
     // 先切换原生窗口尺寸，再挂载阅读内容，避免阅读页经历“大窗口布局 -> 小窗口重排”。
     await applyWindowSizeForMode(true);

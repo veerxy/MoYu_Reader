@@ -16,9 +16,10 @@ export function getTxtScrollbarClassName(isBorderVisible: boolean): string {
  * 不再使用 Tauri setShadow：Windows 上切换原生阴影会改变客户区尺寸，
  * 一像素宽度差异就足以让 TXT 某一行少显示一个字。
  * inset box-shadow 绘制在窗口边缘且不参与布局，显隐切换时正文宽度保持不变。
+ * 不使用外阴影：透明窗口会把圆角外的阴影残留成近似方角的灰色区域。
  */
 export function getWindowBorderStyle(showBorder: boolean): string {
   return showBorder
-    ? 'inset 0 0 0 1px rgba(15, 23, 42, 0.24), 0 12px 32px rgba(15, 23, 42, 0.14)'
+    ? 'inset 0 0 0 1px rgba(39, 39, 42, 0.82)'
     : 'none';
 }
