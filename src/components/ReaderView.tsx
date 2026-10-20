@@ -228,6 +228,12 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
       onClick={handleReaderClick}
       onMouseDown={handleReaderClick}
       onPointerDown={handleReaderClick}
+      onMouseMove={(event) => {
+        // 顶部悬停提示出现后同步关闭初始提示，避免两层提示重叠导致“移开后仍不消失”的错觉。
+        if (event.clientY <= 32) {
+          setShowTabTip(false);
+        }
+      }}
       className="relative w-full h-full flex flex-col select-none overflow-hidden"
       style={{
         ...getBgStyle(),
