@@ -248,9 +248,9 @@ export default function App() {
     return 'bg-[#f8f9fa] text-zinc-800'; // Clean Windows light app background
   };
 
-  // 边框必须只做视觉绘制，不能改变 WebView 客户区尺寸：
+  // 边框只做视觉绘制，且宽度固定为 1px：
   // 1. Tauri setShadow 在 Windows 上会改变客户区，导致 TXT 换行宽度漂移。
-  // 2. inset box-shadow 绘制在最外层内部，不参与布局，也不会形成第二层圆角。
+  // 2. 显隐只改颜色，不改宽度，避免正文排版在切换时变化。
   const isHomeSurface = !isReading || isMinimized;
   const showBorder = !isMaximized && (isHomeSurface || isReaderToolbarVisible);
 
@@ -258,7 +258,7 @@ export default function App() {
     <div
       id="desktop-app-container"
       className={`relative w-full h-full max-h-screen overflow-hidden flex flex-col font-sans select-none box-border rounded-[8px] ${getContainerBgClass()}`}
-      style={{ boxShadow: getWindowBorderStyle(showBorder) }}
+      style={{ border: getWindowBorderStyle(showBorder) }}
     >
       {/* Windows Standard Titlebar (shown in home view) */}
       {(!isReading || isMinimized) && (

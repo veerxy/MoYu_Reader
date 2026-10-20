@@ -10,12 +10,13 @@ test('TXT 滚动条样式在边框显隐时必须保持一致', () => {
 });
 
 
-test('窗口边框样式不参与布局计算', () => {
-  // 原生 setShadow 会改变 Windows 客户区宽度，导致 TXT 换行位置漂移。
-  // 改用 inset box-shadow 后边框只绘制在窗口边缘，不影响内容宽度。
-  assert.equal(getWindowBorderStyle(false), 'none');
-  assert.equal(
-    getWindowBorderStyle(true),
-    'inset 0 0 0 1px rgba(39, 39, 42, 0.82)',
-  );
+test('窗口边框在显隐时保持相同宽度', () => {
+  // 外层边框必须是真实的 border，而不是 box-shadow。
+  // 只有宽度固定，显隐切换才不会改变正文可用宽度。
+  const hiddenBorder = getWindowBorderStyle(false);
+  const visibleBorder = getWindowBorderStyle(true);
+
+  assert.equal(hiddenBorder, '1px solid transparent');
+  assert.equal(visibleBorder, '1px solid rgba(24, 24, 27, 0.72)');
+  assert.equal(hiddenBorder.split(' ')[0], visibleBorder.split(' ')[0]);
 });

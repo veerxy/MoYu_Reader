@@ -11,15 +11,15 @@ export function getTxtScrollbarClassName(isBorderVisible: boolean): string {
 
 
 /**
- * 获取窗口边框样式。
+ * 获取窗口外层边框样式。
  *
- * 不再使用 Tauri setShadow：Windows 上切换原生阴影会改变客户区尺寸，
- * 一像素宽度差异就足以让 TXT 某一行少显示一个字。
- * inset box-shadow 绘制在窗口边缘且不参与布局，显隐切换时正文宽度保持不变。
- * 不使用外阴影：透明窗口会把圆角外的阴影残留成近似方角的灰色区域。
+ * 这里必须使用真正的 border，而不是 box-shadow：
+ * - box-shadow 会被子层背景遮住，导致首页/工具栏看不见边框，正文区域又露出灰边。
+ * - border 绘制在最外层，所有界面区域都能看见。
+ * - 边框宽度永远保持 1px，显隐只改颜色；因为宽度不变，切换时不会改变正文排版。
  */
 export function getWindowBorderStyle(showBorder: boolean): string {
   return showBorder
-    ? 'inset 0 0 0 1px rgba(39, 39, 42, 0.82)'
-    : 'none';
+    ? '1px solid rgba(24, 24, 27, 0.72)'
+    : '1px solid transparent';
 }
