@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ReaderSettings } from '../types';
 import { TxtParagraph } from '../utils/outline';
-import { getTxtScrollbarClassName } from '../utils/readerLayout';
+import { calculateTxtLineScrollStep, getTxtScrollbarClassName } from '../utils/readerLayout';
 import {
   createTxtChunks,
   estimateTxtChunkHeight,
@@ -371,6 +371,44 @@ export const TxtReader: React.FC<TxtReaderProps> = ({
       onProgressChangeRef.current(latest.progress, latest.scrollTop);
     }, 150);
   };
+
+  // 键盘上下键按“一行文字”滚动；跳过输入控件，避免影响设置弹窗的键盘操作。
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      // 设置弹窗打开时允许其内部滚动，不滚动背后的正文。
+      if (document.getElementById('settings-modal-backdrop')) return;
+
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || target.closest('input, textarea, select'))
+      ) {
+        return;
+      }
+
+      // 优先取视口顶边实际段落的行高；未渲染或落在间隙时回退到容器行高。
+      const lineElement = findTopVisibleParagraph(container) ?? container;
+      const step = calculateTxtLineScrollStep(
+        window.getComputedStyle(lineElement).lineHeight,
+        settings.fontSize,
+        settings.lineHeight,
+      );
+      if (!Number.isFinite(step) || step <= 0) return;
+
+      const direction = event.key === 'ArrowUp' ? -1 : 1;
+      container.scrollBy({ top: direction * step, behavior: 'auto' });
+      // 阻止浏览器默认按键滚动，避免一次按键产生两倍滚动量。
+      event.preventDefault();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [settings.fontSize, settings.lineHeight]);
 
   // 先保证目录目标所在分块已渲染；滚动定位必须等真实 DOM 存在后才能执行。
   useEffect(() => {

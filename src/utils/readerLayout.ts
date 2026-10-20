@@ -11,6 +11,23 @@ export function getTxtScrollbarClassName(isBorderVisible: boolean): string {
 
 
 /**
+ * 计算 TXT 键盘滚动的一行步长。
+ *
+ * 浏览器实际渲染行高优先于设置估算值；如果样式返回 normal 或无效值，
+ * 再回退到“字号 × 行高倍数”，保证滚动量仍然等价于一整行文字。
+ */
+export function calculateTxtLineScrollStep(
+  computedLineHeight: string | null | undefined,
+  fallbackFontSize: number,
+  fallbackLineHeight: number,
+): number {
+  const parsedLineHeight = parseFloat(computedLineHeight ?? '');
+  return Number.isFinite(parsedLineHeight) && parsedLineHeight > 0
+    ? parsedLineHeight
+    : fallbackFontSize * fallbackLineHeight;
+}
+
+/**
  * 获取窗口外层边框样式。
  *
  * 这里必须使用真正的 border，而不是 box-shadow：
