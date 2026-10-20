@@ -17,6 +17,6 @@ test('窗口边框在显隐时保持相同宽度', () => {
   const visibleBorder = getWindowBorderStyle(true);
 
   assert.equal(hiddenBorder, '1px solid transparent');
-  assert.equal(visibleBorder, '1px solid rgba(24, 24, 27, 0.72)');
+  assert.equal(visibleBorder, '1px solid rgba(212, 212, 216, 0.9)');
   assert.equal(hiddenBorder.split(' ')[0], visibleBorder.split(' ')[0]);
 });

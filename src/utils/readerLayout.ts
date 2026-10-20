@@ -20,6 +20,6 @@ export function getTxtScrollbarClassName(isBorderVisible: boolean): string {
  */
 export function getWindowBorderStyle(showBorder: boolean): string {
   return showBorder
-    ? '1px solid rgba(24, 24, 27, 0.72)'
+    ? '1px solid rgba(212, 212, 216, 0.9)'
     : '1px solid transparent';
 }
