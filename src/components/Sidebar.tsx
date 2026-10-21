@@ -11,6 +11,7 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import { DocumentItem } from '../types';
+import { getProgressWidthPercent } from '../utils/progress';
 
 interface SidebarProps {
   documents: DocumentItem[];
@@ -134,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`h-full transition-all duration-300 ${
                       doc.type === 'pdf' ? 'bg-rose-500' : 'bg-blue-500'
                     }`}
-                    style={{ width: `${Math.max(3, doc.progress)}%` }}
+                    style={{ width: `${getProgressWidthPercent(doc.progress)}%` }}
                   />
                 </div>
               </div>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { DocumentItem } from '../types';
 import { DocumentImporter } from './DocumentImporter';
+import { getProgressWidthPercent } from '../utils/progress';
 
 interface RecentFileListProps {
   documents: DocumentItem[];
@@ -126,7 +127,7 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
                     className={`h-full rounded-full ${
                       lastReadDoc.type === 'pdf' ? 'bg-rose-500' : 'bg-blue-600'
                     }`}
-                    style={{ width: `${Math.max(4, lastReadDoc.progress)}%` }}
+                    style={{ width: `${getProgressWidthPercent(lastReadDoc.progress)}%` }}
                   />
                 </div>
               </div>
@@ -231,7 +232,7 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
                             className={`h-full rounded-full ${
                               isPdf ? 'bg-rose-500' : 'bg-blue-600'
                             }`}
-                            style={{ width: `${Math.max(3, doc.progress)}%` }}
+                            style={{ width: `${getProgressWidthPercent(doc.progress)}%` }}
                           />
                         </div>
                       </div>

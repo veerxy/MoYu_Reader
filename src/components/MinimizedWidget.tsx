@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, Maximize2, X, Play } from 'lucide-react';
 import { DocumentItem } from '../types';
+import { getProgressWidthPercent } from '../utils/progress';
 
 interface MinimizedWidgetProps {
   document: DocumentItem;
@@ -35,7 +36,7 @@ export const MinimizedWidget: React.FC<MinimizedWidgetProps> = ({
           <div className="w-16 bg-zinc-700 rounded-full h-1 overflow-hidden">
             <div
               className={`h-full ${document.type === 'pdf' ? 'bg-rose-400' : 'bg-blue-400'}`}
-              style={{ width: `${Math.max(5, document.progress)}%` }}
+              style={{ width: `${getProgressWidthPercent(document.progress)}%` }}
             />
           </div>
           <span className="text-[10px] font-mono text-zinc-400">{document.progress}%</span>
