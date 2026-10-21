@@ -84,6 +84,17 @@ jobs:
 
             - **绿色便携版**：`moyu-reader-portable.exe`（单文件双击即开，免安装）
             - **Windows 安装包**：NSIS `.exe` / MSI `.msi`
+
+            ## Windows SmartScreen 安全提示
+
+            当前发布包尚未进行商业代码签名。首次运行时，Windows 可能显示 **“Windows 已保护你的电脑”**。
+
+            这是 Windows 对未签名程序的常规提醒，并不代表检测到病毒。如果你确认文件来自本仓库 Releases 页面，可以：
+
+            1. 点击 **“更多信息”**
+            2. 点击 **“仍要运行”**
+
+            > 请只对确认来源可信的程序使用此方式。
           releaseDraft: false
           prerelease: false
 
@@ -124,6 +135,30 @@ jobs:
 
           if (-not $success) {
             throw "Could not upload portable executable to GitHub Release $tag"
+          }
+
+          # 已存在的 Release 不会自动应用 tauri-action 的 releaseBody，
+          # 因此每次更新资产时同步覆盖说明，确保 SmartScreen 提示始终可见。
+          $releaseNotes = @'
+          极简隐蔽桌面文档阅读器 (Tauri v2 原生桌面端)
+
+          - **绿色便携版**：`moyu-reader-portable.exe`（单文件双击即开，免安装）
+          - **Windows 安装包**：NSIS `.exe` / MSI `.msi`
+
+          ## Windows SmartScreen 安全提示
+
+          当前发布包尚未进行商业代码签名。首次运行时，Windows 可能显示 **“Windows 已保护你的电脑”**。
+
+          这是 Windows 对未签名程序的常规提醒，并不代表检测到病毒。如果你确认文件来自本仓库 Releases 页面，可以：
+
+          1. 点击 **“更多信息”**
+          2. 点击 **“仍要运行”**
+
+          > 请只对确认来源可信的程序使用此方式。
+          '@
+          gh release edit $tag --notes $releaseNotes
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not update release notes for $tag"
           }
 
       - name: Upload Windows exe and msi Artifacts

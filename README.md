@@ -22,10 +22,11 @@
 - **License:** Apache-2.0
 - **Source code:** https://github.com/veerxy/MoYu_Reader
 - **Build system:** GitHub Actions
-- **Automated tests:** 37 unit tests
+- **Automated tests:** 53 unit tests
 - **Releases:** Public GitHub Releases with portable and installer artifacts
+- **Code signing:** Not currently signed; Windows may show a SmartScreen warning on first run
 
-For review purposes: this project is publicly maintained, uses automated CI/CD, and is currently applying to use SignPath Foundation for Windows code signing.
+The project is publicly maintained and uses automated CI/CD. Commercial code signing may be added once the project has broader adoption or a suitable signing service is selected.
 
 </div>
 
@@ -64,6 +65,17 @@ For review purposes: this project is publicly maintained, uses automated CI/CD, 
 | `moyu-reader_x64_en-US.msi` | MSI 安装包 |
 
 > 适用于 Windows 10 / 11（x64）
+
+### ⚠️ Windows SmartScreen 安全提示
+
+当前发布包尚未进行商业代码签名。首次运行时，Windows 可能显示 **“Windows 已保护你的电脑”**。
+
+这是 Windows 对未签名程序的常规提醒，并不代表检测到病毒。如果你确认文件来自本仓库的 [Releases](https://github.com/veerxy/MoYu_Reader/releases) 页面，可以按以下步骤继续：
+
+1. 在提示窗口点击 **“更多信息”**
+2. 点击 **“仍要运行”**
+
+> 请只对确认来源可信的程序使用此方式。如果你从其他渠道下载了安装包，建议先核对文件来源或校验发布信息。
 
 ## 🎮 使用指南
 
