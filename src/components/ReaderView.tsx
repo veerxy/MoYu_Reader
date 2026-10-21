@@ -51,6 +51,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   const [isToolbarVisible, setIsToolbarVisible] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [showTabTip, setShowTabTip] = useState<boolean>(true);
+  const [isTopHintVisible, setIsTopHintVisible] = useState<boolean>(false);
   const [pdfOutlineItems, setPdfOutlineItems] = useState<OutlineItem[]>([]);
   const [outlineTargetParagraphIndex, setOutlineTargetParagraphIndex] = useState<number | undefined>();
   const [outlineTargetPage, setOutlineTargetPage] = useState<number | undefined>();
@@ -487,13 +488,21 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         <div
           id="reader-hidden-toolbar-trigger"
           className="absolute top-0 left-0 right-0 h-7 group z-30 flex justify-center items-start pt-1 pointer-events-auto select-none"
+          onMouseEnter={() => setIsTopHintVisible(true)}
+          onMouseLeave={() => setIsTopHintVisible(false)}
+          onMouseMove={(event) => {
+            // 顶部拖拽区不属于“提示词”的悬停范围；进入该区域时立即隐藏提示。
+            const target = event.target as HTMLElement;
+            setIsTopHintVisible(!target.closest('[data-top-drag]'));
+          }}
         >
           {/* Top draggable area */}
           <div
+            data-top-drag
             onMouseDown={onStartDrag}
             onDoubleClick={onToggleMaximize}
             style={{ WebkitAppRegion: 'drag' } as any}
-            className="absolute inset-x-12 top-0 h-4 cursor-move flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute inset-x-12 top-0 h-4 z-50 cursor-move flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             title="按住此处可拖拽移动窗口"
           >
             <div className="w-16 h-1 rounded-full bg-zinc-400/80 shadow-xs" />
@@ -503,7 +512,9 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
             type="button"
             style={{ WebkitAppRegion: 'no-drag' } as any}
             onClick={() => setIsToolbarVisible(true)}
-            className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 -translate-y-2 group-hover:translate-y-0 px-3 py-1 rounded-full bg-zinc-900/85 text-white text-[11px] shadow-lg backdrop-blur-xs flex items-center gap-1.5 hover:bg-zinc-900 z-40"
+            className={`transition-all duration-200 px-3 py-1 rounded-full bg-zinc-900/85 text-white text-[11px] shadow-lg backdrop-blur-xs flex items-center gap-1.5 hover:bg-zinc-900 z-40 ${
+              isTopHintVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 focus:opacity-100'
+            }`}
           >
             <Eye className="w-3 h-3 text-zinc-300" />
             <span>按 Tab 键显示工具栏与边框</span>
