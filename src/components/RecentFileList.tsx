@@ -65,7 +65,7 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
           </span>
           <span className="text-[11px] text-zinc-400">支持拖入 TXT、PDF</span>
         </div>
-        <DocumentImporter onDocumentImported={onDocumentImported} />
+        <DocumentImporter documents={documents} onDocumentImported={onDocumentImported} />
       </section>
 
       {/* 2. 主题区域二：上次阅读 (核心主体，强化视觉焦点与一键直达) */}

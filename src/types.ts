@@ -12,6 +12,7 @@ export interface DocumentItem {
   size: number;
   type: DocumentType;
   lastOpened: number; // timestamp
+  sourceLastModified?: number; // 源文件修改时间，用于识别再次导入的同一文档
   progress: number; // 0 - 100 percentage
   currentPage?: number; // For PDF
   totalPages?: number; // For PDF

@@ -30,6 +30,7 @@ type DocumentMetadata = {
   totalPages?: number;
   scrollTop?: number;
   scrollPercent?: number;
+  sourceLastModified?: number;
 };
 
 function readDocumentMetaMap(): Record<string, DocumentMetadata> {
@@ -74,6 +75,8 @@ export function upsertDocumentMeta(doc: DocumentItem): void {
   if (doc.totalPages !== undefined) next.totalPages = doc.totalPages;
   if (doc.scrollTop !== undefined) next.scrollTop = doc.scrollTop;
   if (doc.scrollPercent !== undefined) next.scrollPercent = doc.scrollPercent;
+  // 源文件修改时间用于再次导入时识别同一文件，必须随轻量元数据持久化。
+  if (doc.sourceLastModified !== undefined) next.sourceLastModified = doc.sourceLastModified;
 
   map[doc.id] = next;
   writeDocumentMetaMap(map);

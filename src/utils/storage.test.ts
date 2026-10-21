@@ -104,3 +104,26 @@ test('删除文档时会同步清理元数据覆盖层', () => {
   assert.equal(merged.lastOpened, 1);
   assert.equal(merged.progress, 0);
 });
+test('文档元数据会保存源文件修改时间', () => {
+  const storage = createFakeLocalStorage();
+  setLocalStorage(storage);
+  upsertDocumentMeta({
+    id: 'doc-modified',
+    name: 'modified.txt',
+    size: 1,
+    type: 'txt',
+    lastOpened: 789,
+    progress: 10,
+    sourceLastModified: 123456,
+  });
+
+  const merged = applyDocumentMeta({
+    id: 'doc-modified',
+    name: 'modified.txt',
+    size: 1,
+    type: 'txt',
+    lastOpened: 1,
+    progress: 0,
+  });
+  assert.equal(merged.sourceLastModified, 123456);
+});

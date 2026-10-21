@@ -18,6 +18,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { useWindowDrag } from './utils/useWindowDrag';
 import { desktop } from './utils/desktop';
 import { getWindowBorderStyle } from './utils/readerLayout';
+import { dedupeDocuments, getObsoleteDuplicateDocumentIds } from './utils/documentIdentity';
 
 /** 等待下一帧，让 WebView 先完成原生窗口尺寸变化后的布局，再挂载重内容。 */
 function waitForNextFrame(): Promise<void> {
@@ -42,6 +43,14 @@ export default function App() {
   const [isReaderToolbarVisible, setIsReaderToolbarVisible] = useState<boolean>(false);
   // 快速连点多个文档时，只允许最后一次打开请求真正挂载阅读页。
   const openDocumentRequestRef = useRef(0);
+
+  // 书库物理去重：界面不显示重复记录，同时删除 IndexedDB 中的旧重复数据。
+  const removeDuplicateDocuments = useCallback(async (candidates: DocumentItem[]) => {
+    const obsoleteIds = getObsoleteDuplicateDocumentIds(candidates);
+    for (const id of obsoleteIds) {
+      await deleteDocument(id);
+    }
+  }, []);
 
   // 全局支持长按/按住鼠标左键拖动窗口
   useWindowDrag(isMaximized);
@@ -125,7 +134,9 @@ export default function App() {
       try {
         const stored = await getAllDocuments();
         if (stored.length > 0) {
-          setDocuments(stored);
+          const uniqueDocuments = dedupeDocuments(stored);
+          await removeDuplicateDocuments(stored);
+          setDocuments(uniqueDocuments);
         } else {
           const samples = getInitialSampleDocuments();
           for (const sample of samples) {
@@ -142,7 +153,7 @@ export default function App() {
     }
 
     initDocs();
-  }, []);
+  }, [removeDuplicateDocuments]);
 
   // Update settings and persist
   const handleUpdateSettings = (newSettings: ReaderSettings) => {
@@ -207,7 +218,11 @@ export default function App() {
 
   // Handle document newly imported via Importer
   const handleDocumentImported = async (newDoc: DocumentItem) => {
-    setDocuments((prev) => [newDoc, ...prev]);
+    const nextDocuments = [newDoc, ...documents.filter((doc) => doc.id !== newDoc.id)];
+    const uniqueDocuments = dedupeDocuments(nextDocuments);
+    setDocuments(uniqueDocuments);
+    // 用户已确认直接删除旧重复数据；这里同步清理，避免遗留到下次启动。
+    await removeDuplicateDocuments(nextDocuments);
     handleOpenDocument(newDoc);
   };
 

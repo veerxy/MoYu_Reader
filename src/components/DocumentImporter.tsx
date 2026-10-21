@@ -3,13 +3,16 @@ import { Upload, FileText, AlertCircle, CheckCircle2, Sparkles } from 'lucide-re
 import { DocumentItem } from '../types';
 import { saveDocument } from '../utils/storage';
 import { decodeTxtContent } from '../utils/txtEncoding';
+import { findExistingDocumentForFile } from '../utils/documentIdentity';
 
 interface DocumentImporterProps {
+  documents: DocumentItem[];
   onDocumentImported: (doc: DocumentItem) => void;
   className?: string;
 }
 
 export const DocumentImporter: React.FC<DocumentImporterProps> = ({
+  documents,
   onDocumentImported,
   className = '',
 }) => {
@@ -34,6 +37,27 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
     setIsProcessing(true);
 
     try {
+      const documentType = ext === 'txt' ? 'txt' : 'pdf';
+      const existingDoc = findExistingDocumentForFile({
+        documents,
+        fileName: name,
+        fileSize: file.size,
+        documentType,
+        fileLastModified: file.lastModified,
+      });
+
+      // 再次导入同一文件时直接复用历史记录，保留阅读进度，不再生成重复书库数据。
+      if (existingDoc) {
+        const reopenedDoc = {
+          ...existingDoc,
+          lastOpened: Date.now(),
+          sourceLastModified: file.lastModified,
+        };
+        setSuccessMessage(`已找到上次阅读记录，正在继续打开 "${name}"`);
+        onDocumentImported(reopenedDoc);
+        return;
+      }
+
       const id = 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
 
       if (ext === 'txt') {
@@ -47,6 +71,7 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
           size: file.size,
           type: 'txt',
           lastOpened: Date.now(),
+          sourceLastModified: file.lastModified,
           progress: 0,
           scrollTop: 0,
           scrollPercent: 0,
@@ -65,6 +90,7 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
           size: file.size,
           type: 'pdf',
           lastOpened: Date.now(),
+          sourceLastModified: file.lastModified,
           progress: 0,
           currentPage: 1,
           totalPages: 1,
