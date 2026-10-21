@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { DocumentItem } from '../types';
 import { saveDocument } from '../utils/storage';
+import { decodeTxtContent } from '../utils/txtEncoding';
 
 interface DocumentImporterProps {
   onDocumentImported: (doc: DocumentItem) => void;
@@ -36,23 +37,9 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
       const id = 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
 
       if (ext === 'txt') {
-        // Support both UTF-8 and GBK / GB2312 Chinese encodings
+        // 统一走编码识别工具，优先处理 UTF-16 BOM，避免 Windows 记事本文档被误判为 GB18030。
         const buffer = await file.arrayBuffer();
-        let text = '';
-        try {
-          // Attempt UTF-8 with fatal error detection
-          const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
-          text = utf8Decoder.decode(buffer);
-        } catch {
-          // Fall back to GBK / GB18030 for Chinese txt novels
-          try {
-            const gbkDecoder = new TextDecoder('gb18030');
-            text = gbkDecoder.decode(buffer);
-          } catch {
-            const fallbackDecoder = new TextDecoder('utf-8');
-            text = fallbackDecoder.decode(buffer);
-          }
-        }
+        const text = decodeTxtContent(buffer);
 
         const newDoc: DocumentItem = {
           id,
