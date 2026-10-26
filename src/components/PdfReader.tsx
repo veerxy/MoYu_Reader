@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import {
-  ChevronLeft,
-  ChevronRight,
+  ChevronUp,
+  ChevronDown,
   ZoomIn,
   ZoomOut,
   RotateCw,
@@ -13,6 +13,7 @@ import {
 import { OutlineItem, ReaderSettings } from '../types';
 import { PdfOutlineInput, createPageOutline, flattenPdfOutline } from '../utils/outline';
 import { removePdfPageBackground } from '../utils/pdfBackground';
+import { getPdfWheelNavigation } from '../utils/pdfNavigation';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -75,6 +76,8 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const renderTaskRef = useRef<any>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollEdgeRef = useRef<'top' | 'bottom' | null>(null);
 
   // PDF 加载完成后提取目录。读取失败时使用页码目录，避免目录区域空白。
   useEffect(() => {
@@ -190,6 +193,13 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
           removePdfPageBackground(imageData.data, canvas.width, canvas.height);
           context.putImageData(imageData, 0, 0);
         }
+
+        // 页面尺寸确定后再应用翻页后的滚动位置，避免上一页的滚动状态影响下一页。
+        const scrollEdge = pendingScrollEdgeRef.current;
+        if (scrollEdge && viewportRef.current) {
+          pendingScrollEdgeRef.current = null;
+          viewportRef.current.scrollTop = scrollEdge === 'top' ? 0 : viewportRef.current.scrollHeight;
+        }
       } catch (err: any) {
         if (err?.name !== 'RenderingCancelledException') {
           console.warn('PDF page rendering error', err);
@@ -206,10 +216,11 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   }, [pdfDoc, currentPage, scale, rotation, renderPage]);
 
   // Page navigation helpers
-  const goToPage = (newPage: number) => {
+  const goToPage = (newPage: number, scrollEdge: 'top' | 'bottom' = 'top') => {
     if (!pdfDoc) return;
     const clamped = Math.min(Math.max(1, newPage), totalPages);
     if (clamped !== currentPage) {
+      pendingScrollEdgeRef.current = scrollEdge;
       setCurrentPage(clamped);
       const percent = Math.round((clamped / totalPages) * 100);
       onProgressChange(percent, clamped, totalPages);
@@ -223,8 +234,8 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
     }
   }, [outlineTargetPage]);
 
-  const handlePrevPage = () => goToPage(currentPage - 1);
-  const handleNextPage = () => goToPage(currentPage + 1);
+  const handlePrevPage = () => goToPage(currentPage - 1, 'bottom');
+  const handleNextPage = () => goToPage(currentPage + 1, 'top');
 
   // Keyboard navigation
   useEffect(() => {
@@ -234,10 +245,10 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
         return;
       }
 
-      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
         e.preventDefault();
         handlePrevPage();
-      } else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      } else if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault();
         handleNextPage();
       }
@@ -249,6 +260,26 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
 
   const handleContainerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+  };
+
+  // 页面内部未滚到边界时保持原生滚动；到达边界后继续滚动才切换上下页。
+  const handleViewportWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (isLoading || errorMessage || pendingScrollEdgeRef.current) return;
+
+    const action = getPdfWheelNavigation({
+      deltaY: e.deltaY,
+      scrollTop: e.currentTarget.scrollTop,
+      clientHeight: e.currentTarget.clientHeight,
+      scrollHeight: e.currentTarget.scrollHeight,
+      currentPage,
+      totalPages,
+    });
+
+    if (action === 'prev') {
+      handlePrevPage();
+    } else if (action === 'next') {
+      handleNextPage();
+    }
   };
 
   return (
@@ -272,9 +303,9 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
           onClick={handlePrevPage}
           disabled={currentPage <= 1}
           className="p-1 rounded-full hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-          title="上一页 (Left Arrow)"
+          title="上一页 (Up Arrow)"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronUp className="w-4 h-4" />
         </button>
 
         <span className="px-2 font-mono text-[11px] select-none">
@@ -286,9 +317,9 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
           onClick={handleNextPage}
           disabled={currentPage >= totalPages}
           className="p-1 rounded-full hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-          title="下一页 (Right Arrow / Space)"
+          title="下一页 (Down Arrow / Space)"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronDown className="w-4 h-4" />
         </button>
 
         <span className="w-px h-3.5 bg-white/20 mx-1" />
@@ -327,6 +358,8 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
 
       {/* Main PDF Canvas Scroll Viewport */}
       <div
+        ref={viewportRef}
+        onWheel={handleViewportWheel}
         id="pdf-canvas-viewport"
         className={`flex-1 w-full overflow-auto flex items-start justify-center p-4 sm:p-8 ${
           isBorderVisible ? '' : 'hide-scrollbar'
