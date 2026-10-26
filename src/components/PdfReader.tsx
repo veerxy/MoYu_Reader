@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { OutlineItem, ReaderSettings } from '../types';
 import { PdfOutlineInput, createPageOutline, flattenPdfOutline } from '../utils/outline';
+import { removePdfPageBackground } from '../utils/pdfBackground';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -158,7 +159,7 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) return;
 
         // Support High-DPI screens
@@ -174,11 +175,21 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
           canvasContext: context,
           viewport: viewport,
           transform: transform,
+          // 透明模式下先让 PDF.js 使用透明画布底色，再移除页面自身画出的统一底色。
+          background:
+            settings.bgColor === 'transparent' ? 'rgba(0, 0, 0, 0)' : 'rgb(255, 255, 255)',
         };
 
         const task = page.render(renderContext);
         renderTaskRef.current = task;
         await task.promise;
+
+        // 透明模式下移除页面边缘连通的统一底色，保留文字、图片和图形。
+        if (settings.bgColor === 'transparent') {
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          removePdfPageBackground(imageData.data, canvas.width, canvas.height);
+          context.putImageData(imageData, 0, 0);
+        }
       } catch (err: any) {
         if (err?.name !== 'RenderingCancelledException') {
           console.warn('PDF page rendering error', err);
@@ -345,7 +356,7 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
           style={{
             boxShadow:
               settings.bgColor === 'transparent'
-                ? '0 8px 30px rgba(0,0,0,0.12)'
+                ? 'none'
                 : '0 4px 20px rgba(0,0,0,0.08)',
           }}
         >
@@ -353,7 +364,8 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
             ref={canvasRef}
             className="rounded-sm block"
             style={{
-              backgroundColor: '#ffffff',
+              backgroundColor:
+                settings.bgColor === 'transparent' ? 'transparent' : '#ffffff',
             }}
           />
         </div>

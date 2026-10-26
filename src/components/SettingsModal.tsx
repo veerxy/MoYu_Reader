@@ -335,7 +335,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* PDF 文档自身拥有固定背景，这里只提示外围界面可调，避免用户误解客户端失效。 */}
             {documentType === 'pdf' && (
               <p className="text-[11px] leading-relaxed text-zinc-400">
-                PDF 文档内部背景色由文档自身决定，客户端仅支持调整文档外围的界面背景色。
+                选择“透明背景”时，客户端会尝试移除 PDF 页面自身的统一底色，仅保留文字、图片和图形；扫描版或复杂背景 PDF 的透明效果可能不完整。
               </p>
             )}
           </div>

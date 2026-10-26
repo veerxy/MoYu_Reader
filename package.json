@@ -2,7 +2,7 @@
   "name": "moyu-reader",
   "private": true,
   "license": "Apache-2.0",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -12,7 +12,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/utils/outline.test.ts src/utils/txtHeading.test.ts src/utils/readingProgress.test.ts src/utils/txtContent.test.ts src/utils/settings.test.ts src/utils/storage.test.ts src/utils/txtVirtualization.test.ts src/utils/readerLayout.test.ts src/utils/txtEncoding.test.ts src/utils/documentIdentity.test.ts src/utils/progress.test.ts"
+    "test": "tsx --test src/utils/outline.test.ts src/utils/txtHeading.test.ts src/utils/readingProgress.test.ts src/utils/txtContent.test.ts src/utils/settings.test.ts src/utils/storage.test.ts src/utils/txtVirtualization.test.ts src/utils/readerLayout.test.ts src/utils/txtEncoding.test.ts src/utils/documentIdentity.test.ts src/utils/progress.test.ts src/utils/pdfBackground.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -48,7 +48,7 @@ The project is publicly maintained and uses automated CI/CD. Commercial code sig
 ### 🎨 排版自定义
 - 字号（12–36px）、行间距、字体、对齐方式自由调节
 - 字体颜色自定义
-- 四种背景模式（**透明 / 深色 / 纯白 / 仿书纸**，TXT 完整支持；PDF 为纸面渲染，深色模式下自动反色）
+- 四种背景模式（**透明 / 深色 / 纯白 / 仿书纸**，TXT 完整支持；PDF 支持透明背景与深色反色）
 
 ### ⚡ 轻量快速
 - Tauri 2 原生内核，安装包小、内存占用低、启动秒开
