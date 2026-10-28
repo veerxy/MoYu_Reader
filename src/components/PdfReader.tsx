@@ -14,6 +14,7 @@ import { OutlineItem, ReaderSettings } from '../types';
 import { PdfOutlineInput, createPageOutline, flattenPdfOutline } from '../utils/outline';
 import { removePdfPageBackground } from '../utils/pdfBackground';
 import { getPdfWheelNavigation } from '../utils/pdfNavigation';
+import { getPdfControlBarClassName } from '../utils/readerLayout';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -296,7 +297,7 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
       <div
         id="pdf-floating-controls"
         onClick={(e) => e.stopPropagation()}
-        className="my-2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/80 hover:bg-zinc-900 text-white backdrop-blur-md text-xs shadow-md border border-white/10 transition-all"
+        className={`my-2 z-20 items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/80 hover:bg-zinc-900 text-white backdrop-blur-md text-xs shadow-md border border-white/10 transition-all ${getPdfControlBarClassName(isBorderVisible)}`}
       >
         <button
           type="button"

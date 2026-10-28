@@ -1,4 +1,14 @@
 /**
+ * 获取 PDF 顶部控制条的显示类名。
+ *
+ * 极简阅读模式下，PDF 控制条必须和边框、工具栏保持同一显隐状态；
+ * 直接返回互斥的 display 类名，避免 hidden 与 flex 同时叠加导致样式顺序影响隐藏效果。
+ */
+export function getPdfControlBarClassName(isBorderVisible: boolean): string {
+  return isBorderVisible ? 'flex' : 'hidden';
+}
+
+/**
  * TXT 滚动条样式必须与工具栏显隐无关。
  *
  * 原生滚动条会占用正文宽度：边框可见时出现、隐藏时消失，会让同一行

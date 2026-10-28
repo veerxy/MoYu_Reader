@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { calculateTxtKeyboardPageScrollStep, getTxtScrollbarClassName, getWindowBorderStyle } from './readerLayout';
+import { calculateTxtKeyboardPageScrollStep, getPdfControlBarClassName, getTxtScrollbarClassName, getWindowBorderStyle } from './readerLayout';
 
 test('TXT 滚动条样式在边框显隐时必须保持一致', () => {
   // 工具栏显隐不能改变正文可用宽度，否则换行和底部可见文字都会变化。
@@ -28,4 +28,10 @@ test('TXT 键盘按页滚动会保留一行重叠内容', () => {
   assert.equal(calculateTxtKeyboardPageScrollStep(28.8, 600), 571.2);
   // 极小窗口下至少滚动一行，保证按键仍然可用。
   assert.equal(calculateTxtKeyboardPageScrollStep(28, 40), 28);
+});
+
+test('PDF 顶部控制条跟随边框显隐', () => {
+  // 极简阅读模式下，PDF 控制条需要和边框、工具栏一起隐藏。
+  assert.equal(getPdfControlBarClassName(false), 'hidden');
+  assert.equal(getPdfControlBarClassName(true), 'flex');
 });
