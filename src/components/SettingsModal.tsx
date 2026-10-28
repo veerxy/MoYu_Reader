@@ -338,6 +338,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 选择“透明背景”时，客户端会尝试移除 PDF 页面自身的统一底色，仅保留文字、图片和图形；扫描版或复杂背景 PDF 的透明效果可能不完整。
               </p>
             )}
+
+            {/* DOCX 按语义内容渲染，页面底色天然不参与绘制；保留正文、图片和表格。 */}
+            {documentType === 'docx' && (
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                DOCX 会提取正文、图片和表格进行阅读；透明背景下不会显示 Word 页面底色。老版 .doc 请先另存为 .docx。
+              </p>
+            )}
           </div>
         </div>
 

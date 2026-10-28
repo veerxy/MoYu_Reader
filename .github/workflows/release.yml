@@ -83,6 +83,7 @@ jobs:
             极简隐蔽桌面文档阅读器 (Tauri v2 原生桌面端)
 
             - **PDF 透明背景**：支持移除 PDF 页面自身底色，仅保留文字、图片和图形
+            - **DOCX 支持**：支持导入 Word .docx，透明背景隐藏页面底色；老版 .doc 需先另存为 .docx
             - **绿色便携版**：`moyu-reader-portable.exe`（单文件双击即开，免安装）
             - **Windows 安装包**：NSIS `.exe` / MSI `.msi`
 
@@ -144,6 +145,7 @@ jobs:
           极简隐蔽桌面文档阅读器 (Tauri v2 原生桌面端)
 
           - **PDF 透明背景**：支持移除 PDF 页面自身底色，仅保留文字、图片和图形
+          - **DOCX 支持**：支持导入 Word .docx，透明背景隐藏页面底色；老版 .doc 需先另存为 .docx
           - **绿色便携版**：`moyu-reader-portable.exe`（单文件双击即开，免安装）
           - **Windows 安装包**：NSIS `.exe` / MSI `.msi`
 

@@ -14,11 +14,13 @@ import {
 import { DocumentItem, OutlineItem, ReaderSettings } from '../types';
 import { TxtReader } from './TxtReader';
 import { PdfReader } from './PdfReader';
+import { DocxReader } from './DocxReader';
 import { OutlinePanel } from './OutlinePanel';
 import { SettingsModal } from './SettingsModal';
 import { desktop } from '../utils/desktop';
 import { clampTocWidth, TxtParagraph } from '../utils/outline';
 import { prepareTxtContent } from '../utils/txtContent';
+import { extractDocxOutlineFromHtml } from '../utils/docxOutline';
 import { toggleTableOfContents } from '../utils/settings';
 
 const EMPTY_TXT_PARAGRAPHS: TxtParagraph[] = [];
@@ -77,6 +79,12 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   const txtChapterTitleIndexes =
     preparedTxtContent?.chapterTitleIndexes ?? EMPTY_CHAPTER_TITLE_INDEXES;
 
+  // DOCX 目录在导入后的 HTML 中提取，不在阅读页重复解析二进制文档。
+  const docxOutlineItems = useMemo(
+    () => (document.type === 'docx' ? extractDocxOutlineFromHtml(document.docxHtml || '') : []),
+    [document.type, document.docxHtml],
+  );
+
   // 切换文档时清空跳转目标，避免上一个文档的目标章节影响新文档。
   useEffect(() => {
     setPdfOutlineItems([]);
@@ -85,7 +93,12 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   }, [document.id]);
 
   // TXT 目录直接来自 useMemo 结果，不落 state，避免大文档挂载后再完整渲染一遍正文。
-  const outlineItems = document.type === 'txt' ? txtOutlineItems : pdfOutlineItems;
+  const outlineItems =
+    document.type === 'txt'
+      ? txtOutlineItems
+      : document.type === 'docx'
+        ? docxOutlineItems
+        : pdfOutlineItems;
 
   // 拖动过程中使用本地宽度，只在结束时持久化，避免高频写 localStorage。
   useEffect(() => {
@@ -271,10 +284,14 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
 
             <div
               className={`w-5 h-5 rounded-xs flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
-                document.type === 'pdf' ? 'bg-rose-500' : 'bg-blue-600'
+                document.type === 'pdf'
+                  ? 'bg-rose-500'
+                  : document.type === 'docx'
+                    ? 'bg-indigo-500'
+                    : 'bg-blue-600'
               }`}
             >
-              {document.type === 'pdf' ? 'P' : 'T'}
+              {document.type === 'pdf' ? 'P' : document.type === 'docx' ? 'W' : 'T'}
             </div>
 
             <h1
@@ -583,6 +600,20 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
             <TxtReader
               paragraphs={txtParagraphs}
               chapterTitleIndexes={txtChapterTitleIndexes}
+              settings={settings}
+              isBorderVisible={isToolbarVisible}
+              initialScrollPercent={document.scrollPercent || document.progress || 0}
+              initialScrollTop={document.scrollTop}
+              outlineTargetParagraphIndex={outlineTargetParagraphIndex}
+              onProgressChange={(percent, scrollTop) => {
+                onProgressUpdate(percent, { scrollTop, scrollPercent: percent });
+              }}
+            />
+          )}
+
+          {document.type === 'docx' && (
+            <DocxReader
+              html={document.docxHtml || ''}
               settings={settings}
               isBorderVisible={isToolbarVisible}
               initialScrollPercent={document.scrollPercent || document.progress || 0}

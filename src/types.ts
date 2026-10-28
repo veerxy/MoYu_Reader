@@ -2,7 +2,7 @@ import type { OutlineItem } from './utils/outline';
 
 export type { OutlineItem };
 
-export type DocumentType = 'txt' | 'pdf';
+export type DocumentType = 'txt' | 'pdf' | 'docx';
 
 export type BackgroundColorType = 'transparent' | 'dark' | 'white' | 'book' | string;
 
@@ -21,6 +21,7 @@ export interface DocumentItem {
   content?: string; // Text content for txt
   pdfDataUrl?: string; // Data URL or object URL for PDF
   pdfArrayBuffer?: ArrayBuffer; // In-memory buffer if needed
+  docxHtml?: string; // DOCX 转换后的 HTML，导入时保存，历史记录可离线打开
 }
 
 export interface ReaderSettings {

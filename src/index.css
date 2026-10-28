@@ -44,3 +44,40 @@
   width: 0 !important;
   height: 0 !important;
 }
+
+/* DOCX 阅读内容：mammoth 只输出语义内容，这里补齐基础排版并保持页面背景透明。 */
+.docx-content > * + * {
+  margin-top: 0.85em;
+}
+.docx-content h1,
+.docx-content h2,
+.docx-content h3,
+.docx-content h4,
+.docx-content h5,
+.docx-content h6 {
+  font-weight: 700;
+  line-height: 1.35;
+  margin-top: 1.4em;
+}
+.docx-content h1 { font-size: 1.5em; }
+.docx-content h2 { font-size: 1.35em; }
+.docx-content h3 { font-size: 1.2em; }
+.docx-content h4 { font-size: 1.1em; }
+.docx-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.docx-content th,
+.docx-content td {
+  border: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 25%, transparent);
+  padding: 0.35em 0.5em;
+}
+.docx-content img {
+  max-width: 100%;
+  height: auto;
+}
+.docx-content a {
+  color: inherit;
+  text-decoration: underline;
+}

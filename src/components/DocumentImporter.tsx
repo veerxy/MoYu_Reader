@@ -29,15 +29,20 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
     const name = file.name;
     const ext = name.split('.').pop()?.toLowerCase();
 
-    if (ext !== 'txt' && ext !== 'pdf') {
-      setErrorMessage(`暂不支持 .${ext || '未知'} 格式，目前仅支持 .txt 与 .pdf 文档`);
+    if (ext === 'doc') {
+      setErrorMessage('暂不支持老版 .doc，请先在 Word 或 WPS 中另存为 .docx 后再导入');
+      return;
+    }
+
+    if (ext !== 'txt' && ext !== 'pdf' && ext !== 'docx') {
+      setErrorMessage(`暂不支持 .${ext || '未知'} 格式，目前支持 .txt、.pdf 与 .docx 文档`);
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      const documentType = ext === 'txt' ? 'txt' : 'pdf';
+      const documentType = ext === 'txt' ? 'txt' : ext === 'docx' ? 'docx' : 'pdf';
       const existingDoc = findExistingDocumentForFile({
         documents,
         fileName: name,
@@ -80,6 +85,32 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
 
         await saveDocument(newDoc);
         setSuccessMessage(`成功导入文本文档 "${name}"`);
+        onDocumentImported(newDoc);
+      } else if (ext === 'docx') {
+        const buffer = await file.arrayBuffer();
+        // mammoth 体积较大，只在真正导入 DOCX 时动态加载，避免拖慢应用启动。
+        const { convertDocxToHtml } = await import('../utils/docxContent');
+        const html = await convertDocxToHtml(buffer);
+
+        if (!html.trim()) {
+          throw new Error('DOCX 文档没有可读取的正文内容');
+        }
+
+        const newDoc: DocumentItem = {
+          id,
+          name,
+          size: file.size,
+          type: 'docx',
+          lastOpened: Date.now(),
+          sourceLastModified: file.lastModified,
+          progress: 0,
+          scrollTop: 0,
+          scrollPercent: 0,
+          docxHtml: html,
+        };
+
+        await saveDocument(newDoc);
+        setSuccessMessage(`成功导入 Word 文档 "${name}"`);
         onDocumentImported(newDoc);
       } else if (ext === 'pdf') {
         const buffer = await file.arrayBuffer();
@@ -154,7 +185,7 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".txt,.pdf"
+        accept=".txt,.pdf,.docx"
         className="hidden"
         id="file-importer-input"
       />
@@ -180,7 +211,7 @@ export const DocumentImporter: React.FC<DocumentImporterProps> = ({
             <span>点击浏览 或 拖拽文档到此处</span>
           </div>
           <p className="text-xs text-zinc-400 font-normal">
-            自动识别编码，流畅解析 <span className="font-medium text-zinc-700">TXT 小说</span> 与 <span className="font-medium text-zinc-700">PDF 文档</span>
+            自动识别编码，流畅解析 <span className="font-medium text-zinc-700">TXT 小说</span>、<span className="font-medium text-zinc-700">PDF 文档</span> 与 <span className="font-medium text-zinc-700">Word .docx</span>
           </p>
         </div>
 

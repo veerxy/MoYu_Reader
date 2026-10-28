@@ -22,10 +22,14 @@ export const MinimizedWidget: React.FC<MinimizedWidgetProps> = ({
     >
       <div
         className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
-          document.type === 'pdf' ? 'bg-rose-500' : 'bg-blue-600'
+          document.type === 'pdf'
+          ? 'bg-rose-500'
+          : document.type === 'docx'
+            ? 'bg-indigo-500'
+            : 'bg-blue-600'
         }`}
       >
-        {document.type === 'pdf' ? 'PDF' : 'TXT'}
+        {document.type === 'pdf' ? 'PDF' : document.type === 'docx' ? 'DOCX' : 'TXT'}
       </div>
 
       <div className="max-w-[200px]">
@@ -35,7 +39,7 @@ export const MinimizedWidget: React.FC<MinimizedWidgetProps> = ({
         <div className="flex items-center gap-2 mt-0.5">
           <div className="w-16 bg-zinc-700 rounded-full h-1 overflow-hidden">
             <div
-              className={`h-full ${document.type === 'pdf' ? 'bg-rose-400' : 'bg-blue-400'}`}
+              className={`h-full ${document.type === 'pdf' ? 'bg-rose-400' : document.type === 'docx' ? 'bg-indigo-400' : 'bg-blue-400'}`}
               style={{ width: `${getProgressWidthPercent(document.progress)}%` }}
             />
           </div>

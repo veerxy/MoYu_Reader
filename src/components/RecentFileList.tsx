@@ -64,7 +64,7 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
             <FolderOpen className="w-3.5 h-3.5 text-zinc-500" />
             <span>打开本地文档</span>
           </span>
-          <span className="text-[11px] text-zinc-400">支持拖入 TXT、PDF</span>
+          <span className="text-[11px] text-zinc-400">支持拖入 TXT、PDF、DOCX</span>
         </div>
         <DocumentImporter documents={documents} onDocumentImported={onDocumentImported} />
       </section>
@@ -94,7 +94,9 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
                 className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xs tracking-wider shrink-0 shadow-2xs ${
                   lastReadDoc.type === 'pdf'
                     ? 'bg-rose-50 text-rose-600 border border-rose-100'
-                    : 'bg-blue-50 text-blue-600 border border-blue-100'
+                    : lastReadDoc.type === 'docx'
+                      ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                      : 'bg-blue-50 text-blue-600 border border-blue-100'
                 }`}
               >
                 {lastReadDoc.type.toUpperCase()}
@@ -125,7 +127,11 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
                 <div className="w-full max-w-xs bg-zinc-100 rounded-full h-1 overflow-hidden">
                   <div
                     className={`h-full rounded-full ${
-                      lastReadDoc.type === 'pdf' ? 'bg-rose-500' : 'bg-blue-600'
+                      lastReadDoc.type === 'pdf'
+                        ? 'bg-rose-500'
+                        : lastReadDoc.type === 'docx'
+                          ? 'bg-indigo-500'
+                          : 'bg-blue-600'
                     }`}
                     style={{ width: `${getProgressWidthPercent(lastReadDoc.progress)}%` }}
                   />
@@ -187,6 +193,7 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
             <div className="space-y-2 mt-2.5 animate-fadeIn">
               {historyDocs.map((doc) => {
                 const isPdf = doc.type === 'pdf';
+                const isDocx = doc.type === 'docx';
 
                 return (
                   <div
@@ -198,7 +205,11 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 uppercase tracking-wider ${
-                          isPdf ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'
+                          isPdf
+                            ? 'bg-rose-50 text-rose-600'
+                            : isDocx
+                              ? 'bg-indigo-50 text-indigo-600'
+                              : 'bg-blue-50 text-blue-600'
                         }`}
                       >
                         {doc.type}
@@ -230,7 +241,11 @@ export const RecentFileList: React.FC<RecentFileListProps> = ({
                         <div className="w-full bg-zinc-100 rounded-full h-1 overflow-hidden">
                           <div
                             className={`h-full rounded-full ${
-                              isPdf ? 'bg-rose-500' : 'bg-blue-600'
+                              isPdf
+                                ? 'bg-rose-500'
+                                : isDocx
+                                  ? 'bg-indigo-500'
+                                  : 'bg-blue-600'
                             }`}
                             style={{ width: `${getProgressWidthPercent(doc.progress)}%` }}
                           />

@@ -99,7 +99,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 uppercase ${
                         doc.type === 'pdf'
                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                          : doc.type === 'docx'
+                            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                       }`}
                     >
                       {doc.type}
@@ -133,7 +135,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="w-full bg-zinc-800 rounded-full h-1 mt-1 overflow-hidden">
                   <div
                     className={`h-full transition-all duration-300 ${
-                      doc.type === 'pdf' ? 'bg-rose-500' : 'bg-blue-500'
+                      doc.type === 'pdf'
+                        ? 'bg-rose-500'
+                        : doc.type === 'docx'
+                          ? 'bg-indigo-500'
+                          : 'bg-blue-500'
                     }`}
                     style={{ width: `${getProgressWidthPercent(doc.progress)}%` }}
                   />

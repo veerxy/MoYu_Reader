@@ -6,7 +6,7 @@
 
 **极简隐蔽的桌面文档阅读器 —— 工作间隙，安静摸鱼**
 
-基于 Tauri 2 + React 构建的轻量原生桌面应用，专注 TXT 小说与 PDF 文档阅读。
+基于 Tauri 2 + React 构建的轻量原生桌面应用，专注 TXT 小说、PDF 与 Word DOCX 文档阅读。
 默认透明无边框，一键隐身于任何工作界面之上。
 
 [![Release](https://img.shields.io/github/v/release/veerxy/MoYu_Reader?style=flat-square&label=%E5%8F%91%E5%B8%83%E7%89%88%E6%9C%AC)](https://github.com/veerxy/MoYu_Reader/releases)
@@ -17,7 +17,7 @@
 
 ## 🧾 Project Facts
 
-**MoYu Reader** is a lightweight, open-source Windows desktop reader for TXT and PDF documents.
+**MoYu Reader** is a lightweight, open-source Windows desktop reader for TXT, PDF, and DOCX documents.
 
 - **License:** Apache-2.0
 - **Source code:** https://github.com/veerxy/MoYu_Reader
@@ -35,20 +35,20 @@ The project is publicly maintained and uses automated CI/CD. Commercial code sig
 ## ✨ 特性
 
 ### 🫥 隐蔽摸鱼模式
-- **透明无边框窗口** —— 阅读模式默认窗口透明、无标题栏、无边框；TXT 文字直接悬浮在屏幕上，PDF 则呈现悬浮的纸面页面
+- **透明无边框窗口** —— 阅读模式默认窗口透明、无标题栏、无边框；TXT 文字直接悬浮在屏幕上，PDF 呈现悬浮纸面，DOCX 则保留正文、图片和表格
 - **Tab 一键隐藏边框** —— 按 `Tab` 隐藏/显示工具栏与边框，让文字与桌面文字融为一体
 - **窗口快速隐藏** —— 点击窗口外的区域会自动将点击区域置顶，隐藏TXT文字，完美隐身
 
 ### 📖 阅读体验
-- **TXT / PDF 双格式** —— 支持点击浏览与拖拽导入
+- **TXT / PDF / DOCX 三格式** —— 支持点击浏览与拖拽导入；老版 .doc 需先另存为 .docx
 - **编码自动识别** —— GBK / UTF-8 / GB18030 等中文编码自动检测，告别乱码
-- **阅读进度记忆** —— TXT 记录滚动位置，PDF 记录页码，上次读到哪里一目了然
+- **阅读进度记忆** —— TXT 与 DOCX 记录滚动位置，PDF 记录页码，上次读到哪里一目了然
 - **历史书库** —— 最近阅读与历史记录管理，一键续读
 
 ### 🎨 排版自定义
 - 字号（12–36px）、行间距、字体、对齐方式自由调节
 - 字体颜色自定义
-- 四种背景模式（**透明 / 深色 / 纯白 / 仿书纸**，TXT 完整支持；PDF 支持透明背景与深色反色）
+- 四种背景模式（**透明 / 深色 / 纯白 / 仿书纸**，TXT 与 DOCX 完整支持；PDF 支持透明背景与深色反色）
 
 ### ⚡ 轻量快速
 - Tauri 2 原生内核，安装包小、内存占用低、启动秒开
@@ -90,7 +90,7 @@ The project is publicly maintained and uses automated CI/CD. Commercial code sig
 
 ### 摸鱼姿势
 
-1. **打开文档** —— 首页点击或拖入 TXT / PDF 文件
+1. **打开文档** —— 首页点击或拖入 TXT / PDF / DOCX 文件
 2. **进入阅读** —— 窗口自动变为透明无边框小窗，拖到屏幕一隅
 3. **隐身模式** —— 按 `Tab` 隐藏所有边框与工具栏，只剩文字悬浮
 4. **唤回控制** —— 鼠标移到窗口顶部悬停区，或再按 `Tab`
@@ -104,6 +104,7 @@ The project is publicly maintained and uses automated CI/CD. Commercial code sig
 | React 19 + TypeScript | 前端界面 |
 | Tailwind CSS 4 | 样式 |
 | pdfjs-dist | PDF 渲染 |
+| mammoth | DOCX 解析 |
 | Vite 6 | 构建工具 |
 
 ## 💻 本地开发
