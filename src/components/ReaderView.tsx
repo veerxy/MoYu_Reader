@@ -520,7 +520,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
             onDoubleClick={onToggleMaximize}
             style={{ WebkitAppRegion: 'drag' } as any}
             className="absolute inset-x-12 top-0 h-4 z-50 cursor-move flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            title="按住此处可拖拽移动窗口"
           >
             <div className="w-16 h-1 rounded-full bg-zinc-400/80 shadow-xs" />
           </div>
