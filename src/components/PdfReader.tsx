@@ -14,7 +14,10 @@ import { OutlineItem, ReaderSettings } from '../types';
 import { PdfOutlineInput, createPageOutline, flattenPdfOutline } from '../utils/outline';
 import { removePdfPageBackground } from '../utils/pdfBackground';
 import { getPdfWheelNavigation } from '../utils/pdfNavigation';
-import { getPdfControlBarClassName } from '../utils/readerLayout';
+import {
+  getPdfControlBarClassName,
+  getPdfScaleFromFontSize,
+} from '../utils/readerLayout';
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -70,7 +73,7 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.25);
+  const [scale, setScale] = useState<number>(() => getPdfScaleFromFontSize(settings.fontSize));
   const [rotation, setRotation] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -79,6 +82,12 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   const renderTaskRef = useRef<any>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollEdgeRef = useRef<'top' | 'bottom' | null>(null);
+
+  // PDF 没有可直接调整的正文字号，字号设置统一映射为整页缩放，
+  // 让文字、图片和图形一起变化，而不是只修改外层 DOM 样式。
+  useEffect(() => {
+    setScale(getPdfScaleFromFontSize(settings.fontSize));
+  }, [settings.fontSize]);
 
   // PDF 加载完成后提取目录。读取失败时使用页码目录，避免目录区域空白。
   useEffect(() => {

@@ -9,6 +9,19 @@ export function getPdfControlBarClassName(isBorderVisible: boolean): string {
 }
 
 /**
+ * 将全局字号设置映射为 PDF 整页缩放。
+ *
+ * PDF 由 canvas 渲染，不能像 TXT 那样直接修改 DOM 字号；
+ * 这里以 16px 对应 125% 为基准，并限制在控制条允许的缩放范围内。
+ */
+export function getPdfScaleFromFontSize(fontSize: number): number {
+  if (!Number.isFinite(fontSize)) return 1.25;
+
+  const scale = (fontSize / 16) * 1.25;
+  return Math.min(2.5, Math.max(0.6, Number(scale.toFixed(4))));
+}
+
+/**
  * TXT 滚动条样式必须与工具栏显隐无关。
  *
  * 原生滚动条会占用正文宽度：边框可见时出现、隐藏时消失，会让同一行

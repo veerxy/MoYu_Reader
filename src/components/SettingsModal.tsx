@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, RotateCcw, Sliders, Type, Palette, LayoutGrid, Check } from 'lucide-react';
 import { ReaderSettings, BackgroundColorType, DocumentType } from '../types';
+import { getPdfScaleFromFontSize } from '../utils/readerLayout';
 import { DEFAULT_SETTINGS } from '../utils/storage';
 
 interface SettingsModalProps {
@@ -95,7 +96,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span>字体大小</span>
               </label>
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 font-semibold">
-                {settings.fontSize} px
+                {documentType === 'pdf'
+                  ? `${settings.fontSize} px · ${Math.round(getPdfScaleFromFontSize(settings.fontSize) * 100)}%`
+                  : `${settings.fontSize} px`}
               </span>
             </div>
 
@@ -137,6 +140,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </button>
               ))}
             </div>
+
+            {documentType === 'pdf' && (
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                PDF 中的字体大小会映射为整页缩放，调整后文字、图片和图形会一起放大或缩小。
+              </p>
+            )}
           </div>
 
           {/* 2. 行间距 */}

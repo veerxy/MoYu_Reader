@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { calculateTxtKeyboardPageScrollStep, getPdfControlBarClassName, getTxtScrollbarClassName, getWindowBorderStyle } from './readerLayout';
+import { calculateTxtKeyboardPageScrollStep, getPdfControlBarClassName, getPdfScaleFromFontSize, getTxtScrollbarClassName, getWindowBorderStyle } from './readerLayout';
 
 test('TXT 滚动条样式在边框显隐时必须保持一致', () => {
   // 工具栏显隐不能改变正文可用宽度，否则换行和底部可见文字都会变化。
@@ -34,4 +34,13 @@ test('PDF 顶部控制条跟随边框显隐', () => {
   // 极简阅读模式下，PDF 控制条需要和边框、工具栏一起隐藏。
   assert.equal(getPdfControlBarClassName(false), 'hidden');
   assert.equal(getPdfControlBarClassName(true), 'flex');
+});
+
+test('PDF 字号设置会映射为整页缩放', () => {
+  // PDF 由 canvas 渲染，字号设置必须转换为页面缩放，保证文字、图片和图形一起放大。
+  assert.equal(getPdfScaleFromFontSize(16), 1.25);
+  assert.equal(getPdfScaleFromFontSize(24), 1.875);
+  assert.equal(getPdfScaleFromFontSize(36), 2.5);
+  assert.equal(getPdfScaleFromFontSize(12), 0.9375);
+  assert.equal(getPdfScaleFromFontSize(Number.NaN), 1.25);
 });
